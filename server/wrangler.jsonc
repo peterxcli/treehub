@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "treehub-api",
+  "main": "./build/worker.mjs",
+  "compatibility_date": "2026-09-01",
+  "build": { "command": "make worker" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "treehub",
+      // Set to the id printed by `npx wrangler d1 create treehub` (see README).
+      "database_id": "714468db-665a-491f-b50a-4763ada13e6a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    // Non-secret config. Secrets (GITHUB_CLIENT_SECRET, SESSION_SECRET) go through `wrangler secret put`.
+    "GITHUB_CLIENT_ID": "",
+    // Comma separated Chrome extension IDs that may receive sessions: the Chrome Web Store item, and the
+    // maintainer's unpacked build (tmp/chrome, whose ID derives from its path) for testing before a release.
+    "ALLOWED_EXTENSION_IDS": "kamkelclcngghlnfcejjkcckpcnkdaim,iligkigjjielhdpimbageepklpcmagcg"
+  },
+  "observability": {
+    "enabled": true,
+    // OAuth callbacks carry a one-time code in the query, and API requests a bearer session: keep both out of
+    // the logs (only console output of the Worker is logged, and request URLs without query strings)
+    "redact_query_string": true,
+    "logs": { "invocation_logs": false }
+  }
+}

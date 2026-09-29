@@ -1,0 +1,10 @@
+# Copy to .dev.vars for local `wrangler dev`.
+# At least 32 characters, e.g. the output of `openssl rand -hex 32`.
+SESSION_SECRET=change-me-to-a-random-string-of-at-least-32-characters
+# GitHub OAuth App credentials; optional locally (/auth/dev-login works without them).
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+# Local only: enables GET /auth/dev-login?ext=...&nonce=...&login=... (never set in production)
+DEV_AUTH=true
+# Comma separated Chrome extension IDs that may receive sessions.
+ALLOWED_EXTENSION_IDS=kamkelclcngghlnfcejjkcckpcnkdaim

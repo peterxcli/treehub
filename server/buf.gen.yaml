@@ -1,0 +1,14 @@
+version: v2
+plugins:
+  # Go structs (server). Requires protoc-gen-go on PATH:
+  #   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  - local: protoc-gen-go
+    out: gen/go
+    opt: paths=source_relative
+  # TypeScript for the extension (npm install first). json_types=true also emits
+  # *Json types; the wire format itself is described in the .proto header.
+  - local: node_modules/.bin/protoc-gen-es
+    out: ../app/src/gen
+    opt:
+      - target=ts
+      - json_types=true
