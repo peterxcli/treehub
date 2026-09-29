@@ -15,7 +15,7 @@
   ],
   "vars": {
     // Non-secret config. Secrets (GITHUB_CLIENT_SECRET, SESSION_SECRET) go through `wrangler secret put`.
-    "GITHUB_CLIENT_ID": "",
+    "GITHUB_CLIENT_ID": "Ov23liKyOwKsuF8gMRts",
     // Comma separated Chrome extension IDs that may receive sessions: the Chrome Web Store item, and the
     // maintainer's unpacked build (tmp/chrome, whose ID derives from its path) for testing before a release.
     "ALLOWED_EXTENSION_IDS": "kamkelclcngghlnfcejjkcckpcnkdaim,iligkigjjielhdpimbageepklpcmagcg"
