@@ -63,9 +63,31 @@ test('own draft: mentioned, draft, yours; no review statuses on own pull request
 });
 
 test('merged and closed pull requests', () => {
-  assert.deepEqual(keys(computeStatuses(pr(11325), {me})), ['mentioned', 'reviewed', 'merged']);
-  assert.equal(computeStatuses(pr(11325), {me}).find((s) => s.key === 'reviewed')!.label, 'You approved');
+  // Approved by me before it was merged; the review decision only matters while open
+  assert.deepEqual(keys(computeStatuses(pr(11325), {me})), ['mentioned', 'approved_by_you', 'merged']);
+  assert.equal(computeStatuses(pr(11325), {me}).find((s) => s.key === 'approved_by_you')!.label, 'Approved by you');
   assert.deepEqual(keys(computeStatuses(pr(10765), {me})), ['closed']);
+});
+
+test('approved and approved by you are separate statuses', () => {
+  const variant = (decision: PRNode['reviewDecision'], myReview: string, author = 'smengcl'): PRNode => {
+    const node = pr(11321);
+    return {
+      ...node,
+      author: {login: author},
+      reviewDecision: decision,
+      viewerLatestReview: {...node.viewerLatestReview!, state: myReview}
+    };
+  };
+  const approvals = (node: PRNode) => keys(computeStatuses(node, {me})).filter((k) => /approved|reviewed/.test(k));
+
+  assert.deepEqual(approvals(variant('APPROVED', 'APPROVED')), ['approved', 'approved_by_you']);
+  // Approved by someone else while I only commented
+  assert.deepEqual(approvals(variant('APPROVED', 'COMMENTED')), ['approved', 'reviewed']);
+  // My approval is not enough yet
+  assert.deepEqual(approvals(variant('REVIEW_REQUIRED', 'APPROVED')), ['approved_by_you']);
+  // No review statuses of mine on my own pull request
+  assert.deepEqual(approvals(variant('APPROVED', 'APPROVED', 'peterxcli')), ['approved']);
 });
 
 test('the handle is compared case-insensitively', () => {

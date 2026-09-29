@@ -17,6 +17,7 @@ const ICONS: Record<StatusKey, OcticonName> = {
   reviewed: 'comment',
   changes_requested: 'file-diff',
   approved: 'check-circle',
+  approved_by_you: 'check-circle-fill',
   checks_failing: 'x-circle',
   checks_pending: 'dot-fill',
   checks_passing: 'check',
@@ -28,10 +29,13 @@ const ICONS: Record<StatusKey, OcticonName> = {
   yours: 'person'
 };
 
+// When you reviewed is in the tooltip only, to keep rows short
+const OWN_REVIEW: StatusKey[] = ['reviewed', 'approved_by_you'];
+
 const icon = computed<OcticonName>(() => {
   const {key, tone} = props.status;
   // The icon of your own review follows its outcome
-  if (key === 'reviewed') return tone === 'success' ? 'check-circle' : tone === 'danger' ? 'file-diff' : 'comment';
+  if (key === 'reviewed') return tone === 'danger' ? 'file-diff' : 'comment';
   return ICONS[key];
 });
 
@@ -53,6 +57,6 @@ const tooltip = computed(() => {
   >
     <Octicon :name="icon" :size="14" />
     <span>{{ status.label }}</span>
-    <time v-if="status.at && status.key !== 'reviewed'" :datetime="status.at">{{ timeAgo(status.at, clock) }}</time>
+    <time v-if="status.at && !OWN_REVIEW.includes(status.key)" :datetime="status.at">{{ timeAgo(status.at, clock) }}</time>
   </component>
 </template>

@@ -16,6 +16,7 @@ export type StatusKey =
   | 'reviewed'
   | 'changes_requested'
   | 'approved'
+  | 'approved_by_you'
   | 'checks_failing'
   | 'checks_pending'
   | 'checks_passing'
@@ -67,6 +68,7 @@ export const STATUS_ORDER: StatusKey[] = [
   'updated',
   'changes_requested',
   'approved',
+  'approved_by_you',
   'reviewed',
   'checks_failing',
   'checks_pending',
@@ -86,9 +88,10 @@ export const STATUS_FILTER_LABELS: Record<StatusKey, string> = {
   replies: 'Replies to you',
   mentioned: 'Mentioned',
   updated: 'Updated since you looked',
-  reviewed: 'Reviewed by you',
+  reviewed: 'Reviewed by you (not approved)',
   changes_requested: 'Changes requested',
   approved: 'Approved',
+  approved_by_you: 'Approved by you',
   checks_failing: 'Checks failing',
   checks_pending: 'Checks running',
   checks_passing: 'Checks passing',
@@ -224,17 +227,21 @@ export function computeStatuses(pr: PRNode, {me, lastSeenAt}: RuleContext): Stat
     add({key: 'review_requested', label: 'Review requested', tone: 'accent', attention: true});
   }
 
-  // My latest review, and commits pushed after it
+  // My latest review (an approval is its own status), and commits pushed after it
   const review = pr.viewerLatestReview;
   if (review && !mine) {
-    const labels: Record<string, [string, Tone]> = {
-      APPROVED: ['You approved', 'success'],
-      CHANGES_REQUESTED: ['You requested changes', 'danger'],
-      COMMENTED: ['You commented', 'neutral'],
-      DISMISSED: ['Your review was dismissed', 'neutral']
-    };
-    const [label, tone] = labels[review.state] || ['You reviewed', 'neutral'];
-    add({key: 'reviewed', label, tone, attention: false, at: review.submittedAt || undefined});
+    const at = review.submittedAt || undefined;
+    if (review.state === 'APPROVED') {
+      add({key: 'approved_by_you', label: 'Approved by you', tone: 'success', attention: false, at});
+    } else {
+      const labels: Record<string, [string, Tone]> = {
+        CHANGES_REQUESTED: ['You requested changes', 'danger'],
+        COMMENTED: ['You commented', 'neutral'],
+        DISMISSED: ['Your review was dismissed', 'neutral']
+      };
+      const [label, tone] = labels[review.state] || ['You reviewed', 'neutral'];
+      add({key: 'reviewed', label, tone, attention: false, at});
+    }
 
     const reviewedOid = review.commit && review.commit.oid;
     if (open && reviewedOid && reviewedOid !== pr.headRefOid) {
@@ -298,7 +305,7 @@ export function computeStatuses(pr: PRNode, {me, lastSeenAt}: RuleContext): Stat
     add({key: 'updated', label: 'Updated since you looked', tone: 'accent', attention: true, at: pr.updatedAt});
   }
 
-  // Review decision
+  // Review decision, whoever reviewed
   if (open && pr.reviewDecision === 'CHANGES_REQUESTED') {
     add({key: 'changes_requested', label: 'Changes requested', tone: 'danger', attention: false});
   } else if (open && pr.reviewDecision === 'APPROVED') {

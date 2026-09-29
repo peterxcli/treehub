@@ -43,7 +43,7 @@ PULL REQUEST NAVIGATION
 
 REVIEW QUEUE
 • One click on a pull request adds it to your review queue; the icon turns bold while it is queued
-• For each queued pull request, TreeHub shows what concerns you, each as its own status: review requested, new commits since your review, replies to your review comments and who wrote them, when you were last mentioned, updates since you last looked, your review and the review decision, checks, merge conflicts, draft, ready for review, merged, closed
+• For each queued pull request, TreeHub shows what concerns you, each as its own status: review requested, new commits since your review, replies to your review comments and who wrote them, when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged, closed
 • Refreshed every 15 minutes; the toolbar icon counts the pull requests that need your attention
 
 BOOKMARKS
