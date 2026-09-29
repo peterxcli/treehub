@@ -6,10 +6,7 @@
 const GH_PJAX_CONTAINER_SEL =
   '#js-repo-pjax-container, div[itemtype="http://schema.org/SoftwareSourceCode"] main, [data-pjax-container]';
 
-const GH_CONTAINERS = '.container, .container-lg, .container-responsive';
 const GH_MAX_HUGE_REPOS_SIZE = 50;
-const GH_HIDDEN_RESPONSIVE_CLASS = '.d-none';
-const GH_RESPONSIVE_BREAKPOINT = 1010;
 
 // The API returns at most 3000 files for a pull request or a commit
 const GH_MAX_PAGES = 30;
@@ -126,33 +123,14 @@ class GitHub extends PjaxAdapter {
 
   // @override
   updateLayout(sidebarPinned, sidebarVisible, sidebarWidth, dock) {
-    const SPACING = 20;
     const side = dock === 'right' ? 'right' : 'left';
     const otherSide = side === 'left' ? 'right' : 'left';
-    const $containers =
-      $('html').width() <= GH_RESPONSIVE_BREAKPOINT
-        ? $(GH_CONTAINERS).not(GH_HIDDEN_RESPONSIVE_CLASS)
-        : $(GH_CONTAINERS);
-
-    const shouldPushEverything = sidebarPinned && sidebarVisible;
-
-    $('html').css(`margin-${otherSide}`, '');
-    $containers.css(`margin-${otherSide}`, '');
-
-    if (shouldPushEverything) {
-      $('html').css(`margin-${side}`, sidebarWidth);
-
-      const autoMargin = ($(document).width() - $containers.width()) / 2;
-      const margin = Math.max(SPACING, autoMargin - sidebarWidth);
-      $containers.each(function () {
-        const $container = $(this);
-        const padding = ($container.innerWidth() - $container.width()) / 2;
-        $container.css(`margin-${side}`, margin - padding);
-      })
-    } else {
-      $('html').css(`margin-${side}`, '');
-      $containers.css(`margin-${side}`, '');
-    }
+    // A pinned sidebar pushes the whole page aside, and GitHub lays the page out in the space left. Elements with
+    // .container or .container-lg are not moved: GitHub uses these classes inside pages now (READMEs, the code
+    // view), where extra margins squeezed the content.
+    $('html')
+      .css(`margin-${otherSide}`, '')
+      .css(`margin-${side}`, sidebarPinned && sidebarVisible ? sidebarWidth : '');
   }
 
   // @override
