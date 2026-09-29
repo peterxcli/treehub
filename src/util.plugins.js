@@ -28,3 +28,28 @@
     };
   };
 })($);
+
+/**
+ * Plugin rendering the review conversations of a changed file below its node.
+ * Threads are read from node.original.patch.threads and shown when node.original.commentsExpanded is set.
+ * The markup is produced by the `comments.render(node)` setting.
+ */
+(function($) {
+  'use strict';
+  $.jstree.defaults.comments = {render: null};
+  $.jstree.plugins.comments = function(opts, parent) {
+    this.redraw_node = function(obj, deep, callback, force_draw) {
+      obj = parent.redraw_node.call(this, obj, deep, callback, force_draw);
+      const render = this.settings.comments.render;
+      if (obj && render) {
+        const node = this.get_node(obj.id);
+        const original = node && node.original;
+        if (original && original.commentsExpanded && original.patch && original.patch.threads) {
+          $(obj).append(render(node));
+        }
+      }
+
+      return obj;
+    };
+  };
+})($);

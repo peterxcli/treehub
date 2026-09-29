@@ -11,8 +11,8 @@ class PjaxAdapter extends Adapter {
 
   // @override
   // @api public
-  init($sidebar) {
-    super.init($sidebar);
+  init($sidebar, dock) {
+    super.init($sidebar, dock);
 
     const pjaxContainer = $(this._pjaxContainerSel)[0];
 
@@ -21,7 +21,7 @@ class PjaxAdapter extends Adapter {
     // Some host switch pages using pjax. This observer detects if the pjax container
     // Has been updated with new contents and trigger layout.
     const pageChangeObserver = new window.MutationObserver(() => {
-      // Trigger location change, can't just relayout as Octotree might need to
+      // Trigger location change, can't just relayout as TreeHub might need to
       // Hide/show depending on whether the current page is a code page or not.
       return $(document).trigger(EVENT.LOC_CHANGE);
     });
@@ -30,32 +30,33 @@ class PjaxAdapter extends Adapter {
       pageChangeObserver.observe(pjaxContainer, {
         childList: true
       });
-    } else {
-      // Fall back if DOM has been changed
-      let firstLoad = true,
-        href,
-        hash;
-
-      function detectLocChange() {
-        if (location.href !== href || location.hash !== hash) {
-          href = location.href;
-          hash = location.hash;
-
-          // If this is the first time this is called, no need to notify change as
-          // Octotree does its own initialization after loading options.
-          if (firstLoad) {
-            firstLoad = false;
-          } else {
-            setTimeout(() => {
-              $(document).trigger(EVENT.LOC_CHANGE);
-            }, 300); // Wait a bit for pjax DOM change
-          }
-        }
-        setTimeout(detectLocChange, 200);
-      }
-
-      detectLocChange();
     }
+
+    // Also watch the URL: hosts may navigate client-side without touching the pjax container
+    // (e.g. GitHub's Turbo and React pages).
+    let firstLoad = true,
+      href,
+      hash;
+
+    function detectLocChange() {
+      if (location.href !== href || location.hash !== hash) {
+        href = location.href;
+        hash = location.hash;
+
+        // If this is the first time this is called, no need to notify change as
+        // TreeHub does its own initialization after loading options.
+        if (firstLoad) {
+          firstLoad = false;
+        } else {
+          setTimeout(() => {
+            $(document).trigger(EVENT.LOC_CHANGE);
+          }, 300); // Wait a bit for pjax DOM change
+        }
+      }
+      setTimeout(detectLocChange, 200);
+    }
+
+    detectLocChange();
   }
 
   // @override
@@ -87,7 +88,7 @@ class PjaxAdapter extends Adapter {
    * Event handler of pjax events.
    * @api private
    */
-  _handlePjaxEvent(event, octotreeEventName, pjaxEventName) {
+  _handlePjaxEvent(event, treehubEventName, pjaxEventName) {
     // Avoid re-entrance, which would blow the callstack. Because dispatchEvent() is synchronous, it's possible
     // for badly implemented handler from another extension to prevent legit event handling if users navigate
     // among files too quickly. Hopefully none is that bad. We'll deal with it IFF it happens.
@@ -97,9 +98,9 @@ class PjaxAdapter extends Adapter {
     this._isDispatching = true;
 
     try {
-      $(document).trigger(octotreeEventName);
+      $(document).trigger(treehubEventName);
 
-      // Only dispatch to native DOM if the event is started by Octotree. If the event is started in the DOM, jQuery
+      // Only dispatch to native DOM if the event is started by TreeHub. If the event is started in the DOM, jQuery
       // wraps it in the originalEvent property, that's what we use to check. Fixes #864.
       if (event.originalEvent == null) {
         // TODO dispatch pjax event so other add-ons can handle
@@ -111,7 +112,7 @@ class PjaxAdapter extends Adapter {
 
   // @api protected
   _patchPjax() {
-    // The pjax plugin ($.pjax) is loaded in same time with Octotree (document ready event) and
+    // The pjax plugin ($.pjax) is loaded in same time with TreeHub (document ready event) and
     // we don't know when $.pjax fully loaded, so we will do patching once in runtime
     if (!!this._$pjaxPatched) return;
 
@@ -120,12 +121,12 @@ class PjaxAdapter extends Adapter {
      * a file is clicked on its file list. Internally, Github uses pjax
      * (a jQuery plugin - defunkt/jquery-pjax) to fetch the file content being selected, and there is
      * a change on Github's server rendering that cause the refreshing problem. And this also impacts
-     * on Octotree where Github page refreshes when users select a file in Octotree's sidebar
+     * on TreeHub where Github page refreshes when users select a file in TreeHub's sidebar
      *
      * The refresh happens due to this code https://github.com/defunkt/jquery-pjax/blob/c9acf5e7e9e16fdd34cb2de882d627f97364a952/jquery.pjax.js#L272.
      *
      * While waiting for Github to solve the wrong refreshing, below code is a hacking fix that
-     * Octotree won't trigger refreshing when a file selected in sidebar (but Github still refreshes
+     * TreeHub won't trigger refreshing when a file selected in sidebar (but Github still refreshes
      * if file selected at Github file view)
      */
     $.pjax.defaults.version = function () {

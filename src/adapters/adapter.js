@@ -67,13 +67,18 @@ class Adapter {
               title: path
             };
 
+            if (item.patch && item.patch.viewed) {
+              item.li_attr.class = VIEWED_CLASS;
+            }
+
             // Uses `type` as class name for tree node
             item.icon = type;
 
-            await octotree.setNodeIconAndText(this, item);
+            await treehub.setNodeIconAndText(this, item);
 
             if (item.patch) {
-              item.text += `<span class="octotree-patch">${this.buildPatchHtml(item)}</span>`;
+              item.text += `<span class="treehub-patch">${this.buildPatchHtml(item)}</span>`;
+              item.text += this.buildCommentsBadgeHtml(item);
             }
 
             if (node) {
@@ -88,8 +93,8 @@ class Adapter {
                 else folders[item.path] = item.children = [];
               }
 
-              // If item is part of a PR, jump to that file's diff
-              if (item.patch && typeof item.patch.diffId === 'number') {
+              // If item is part of a PR or commit, jump to that file's diff
+              if (item.patch && item.patch.diffId) {
                 const url = this._getPatchHref(repo, item.patch);
                 item.a_attr = {
                   href: url,
@@ -159,7 +164,7 @@ class Adapter {
         break;
       case 401:
         error = 'Invalid token';
-        message = await octotree.getInvalidTokenMessage({
+        message = await treehub.getInvalidTokenMessage({
           responseStatus: jqXHR.status,
           requestHeaders: settings.headers
         });
@@ -176,7 +181,7 @@ class Adapter {
           error = 'API limit exceeded';
           message =
             'You have exceeded the <a href="https://developer.github.com/v3/#rate-limiting">GitHub API rate limit</a>. ' +
-            'To continue using Octotree, you need to provide a GitHub access token. ' +
+            'To continue using TreeHub, you need to provide a GitHub access token. ' +
             'Please go to <a class="settings-btn">Settings</a> and enter a token.';
         } else {
           error = 'Forbidden';
@@ -200,7 +205,7 @@ class Adapter {
   }
 
   /**
-   * Returns the CSS class to be added to the Octotree sidebar.
+   * Returns the CSS class to be added to the TreeHub sidebar.
    * @api public
    */
   getCssClass() {
@@ -217,10 +222,21 @@ class Adapter {
 
   /**
    * Inits behaviors after the sidebar is added to the DOM.
+   * @param {!JQuery} $sidebar
+   * @param {string} dock 'left' or 'right'
    * @api public
    */
-  init($sidebar) {
-    $sidebar.resizable({handles: 'e', minWidth: this.getMinWidth()});
+  init($sidebar, dock) {
+    this.setDock($sidebar, dock);
+  }
+
+  /**
+   * Updates behaviors that depend on which side of the screen the sidebar is docked to.
+   * @api public
+   */
+  setDock($sidebar, dock) {
+    if ($sidebar.resizable('instance')) $sidebar.resizable('destroy');
+    $sidebar.resizable({handles: dock === 'right' ? 'w' : 'e', minWidth: this.getMinWidth()});
   }
 
   /**
@@ -248,10 +264,10 @@ class Adapter {
   }
 
   /**
-   * Updates the layout based on sidebar visibility and width.
+   * Updates the layout based on sidebar visibility, width and docking side ('left' or 'right').
    * @api public
    */
-  updateLayout(sidebarPinned, sidebarVisible, sidebarWidth) {
+  updateLayout(sidebarPinned, sidebarVisible, sidebarWidth, dock) {
     throw new Error('Not implemented');
   }
 
@@ -284,6 +300,14 @@ class Adapter {
   }
 
   /**
+   * Returns the path of the changed file whose diff has the given anchor id, if known.
+   * @api public
+   */
+  getPathFromDiffAnchor(anchor) {
+    return null;
+  }
+
+  /**
    * Selects a submodule.
    * @api public
    */
@@ -297,6 +321,20 @@ class Adapter {
    */
   openInNewTab(path) {
     window.open(path, '_blank').focus();
+  }
+
+  /**
+   * Navigates to a URL of the site. Clicking a link lets the host handle it as a client-side
+   * navigation when it supports that, otherwise the browser loads the page.
+   * @api public
+   */
+  navigate(url) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   }
 
   /**
@@ -332,11 +370,33 @@ class Adapter {
     patch += action === 'added' ? '<span class="text-green">added</span>' : '';
     patch += action === 'renamed' ? `<span class="text-green" title="${previous}">renamed</span>` : '';
     patch += action === 'removed' ? `<span class="text-red" title="${previous}">removed</span>` : '';
-    patch += files ? `<span class='octotree-patch-files'>${files} ${files === 1 ? 'file' : 'files'}</span>` : '';
+    patch += files ? `<span class='treehub-patch-files'>${files} ${files === 1 ? 'file' : 'files'}</span>` : '';
     patch += additions !== 0 ? `<span class="text-green">+${additions}</span>` : '';
     patch += deletions !== 0 ? `<span class="text-red">-${deletions}</span>` : '';
 
     return patch;
+  }
+
+  /**
+   * Returns the badge showing the number of review conversations of a changed file, if any.
+   * @param {Object} treeItem
+   */
+  buildCommentsBadgeHtml(treeItem = {}) {
+    const threads = (treeItem.patch && treeItem.patch.threads) || [];
+    if (!threads.length) return '';
+
+    const comments = threads.reduce((count, thread) => count + thread.comments.length, 0);
+    const unresolved = threads.filter((thread) => !thread.resolved).length;
+    const title =
+      `${threads.length} ${threads.length === 1 ? 'conversation' : 'conversations'}, ` +
+      `${comments} ${comments === 1 ? 'comment' : 'comments'}` +
+      (unresolved !== threads.length ? `, ${threads.length - unresolved} resolved` : '') +
+      '. Click to show or hide.';
+
+    return (
+      `<span class="treehub-comments-toggle${unresolved ? '' : ' treehub-comments-toggle--resolved'}" ` +
+      `title="${title}">${octicon('comment', 14)}<span>${threads.length}</span></span>`
+    );
   }
 
   /**
@@ -369,7 +429,8 @@ class Adapter {
    * @api protected
    */
   _getPatchHref(repo, patch) {
-    return `/${repo.username}/${repo.reponame}/pull/${repo.pullNumber}/files#diff-${patch.diffId}`;
+    const diffPath = patch.diffPath || `/${repo.username}/${repo.reponame}/pull/${repo.pullNumber}/files`;
+    return `${diffPath}#diff-${patch.diffId}`;
   }
 
   _sort(folder) {
@@ -397,15 +458,15 @@ class Adapter {
 
           /**
            * Using a_attr rather than item.text to concat in order to
-           * avoid the duplication of <div class="octotree-patch">
+           * avoid the duplication of <div class="treehub-patch">
            *
            * For example:
            *
            * - item.text + onlyChild.text
-           * 'src/adapters/<span class="octotree-patch">+1</span>' + 'github.js<span class="octotree-patch">+1</span>'
+           * 'src/adapters/<span class="treehub-patch">+1</span>' + 'github.js<span class="treehub-patch">+1</span>'
            *
            * - path + onlyChild.text
-           * 'src/adapters/' + 'github.js<span class="octotree-patch">+1</span>'
+           * 'src/adapters/' + 'github.js<span class="treehub-patch">+1</span>'
            *
            */
           onlyChild.text = path + '/' + onlyChild.text;

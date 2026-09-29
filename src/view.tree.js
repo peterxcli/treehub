@@ -1,9 +1,9 @@
 class TreeView {
   constructor($dom, adapter) {
     this.adapter = adapter;
-    this.$view = $dom.find('.octotree-tree-view');
+    this.$view = $dom.find('.treehub-tree-view');
     this.$tree = this.$view
-      .find('.octotree-view-body')
+      .find('.treehub-view-body')
       .on('click.jstree', '.jstree-open>a', ({target}) => {
         this.$jstree.close_node(target);
       })
@@ -13,8 +13,11 @@ class TreeView {
       .on('click', this._onItemClick.bind(this))
       .jstree({
         core: {multiple: false, animation: 50, worker: false, themes: {responsive: false}},
-        plugins: ['wholerow', 'search', 'truncate']
+        plugins: ['wholerow', 'search', 'truncate', 'comments'],
+        comments: {render: (node) => this._renderThreads(node.original.patch.threads)}
       });
+
+    $(document).on(EVENT.VIEWED_CHANGE, (event, {path, viewed}) => this._setViewed(path, viewed));
   }
 
   get $jstree() {
@@ -66,16 +69,16 @@ class TreeView {
     const adapter = this.adapter;
 
     this.$view
-      .find('.octotree-view-header')
+      .find('.treehub-view-header')
       .html(
-        `<div class="octotree-header-summary">
-          <div class="octotree-header-repo">
-            <i class="octotree-icon-repo"></i>
+        `<div class="treehub-header-summary">
+          <div class="treehub-header-repo">
+            <i class="treehub-icon-repo"></i>
             <a href="/${repo.username}">${repo.username}</a> /
             <a data-pjax href="/${repo.username}/${repo.reponame}">${repo.reponame}</a>
           </div>
-          <div class="octotree-header-branch">
-            <i class="octotree-icon-branch"></i>
+          <div class="treehub-header-branch">
+            <i class="treehub-icon-branch"></i>
             ${deXss((repo.displayBranch || repo.branch).toString())}
           </div>
         </div>`
@@ -104,6 +107,26 @@ class TreeView {
 
     if (this.onItemClick(event)) return;
 
+    const adapter = this.adapter;
+    const newTab = event.shiftKey || event.ctrlKey || event.metaKey;
+
+    // Review conversation shown below a changed file
+    const $comment = $target.closest('.treehub-comment');
+    if ($comment.length) {
+      event.preventDefault();
+      const href = $comment.attr('href');
+      newTab ? adapter.openInNewTab(href) : adapter.selectFile(href);
+      return;
+    }
+
+    // Badge with the number of conversations of a changed file
+    const $commentsToggle = $target.closest('.treehub-comments-toggle');
+    if ($commentsToggle.length) {
+      const node = this.$jstree.get_node($commentsToggle.closest('.jstree-node'));
+      this._toggleComments(node);
+      return;
+    }
+
     // Handle icon click, fix #122
     if ($target.is('i.jstree-icon')) {
       $target = $target.parent();
@@ -112,7 +135,7 @@ class TreeView {
 
     $target = $target.is('a.jstree-anchor') ? $target : $target.parent();
 
-    if ($target.is('.octotree-patch')) {
+    if ($target.is('.treehub-patch')) {
       $target = $target.parent();
     }
 
@@ -125,8 +148,6 @@ class TreeView {
       });
     };
 
-    const adapter = this.adapter;
-    const newTab = event.shiftKey || event.ctrlKey || event.metaKey;
     const href = $target.attr('href');
     // The 2nd path is for submodule child links
     const $icon = $target.children().length ? $target.children(':first') : $target.siblings(':first');
@@ -142,13 +163,89 @@ class TreeView {
       } else {
         refocusAfterCompletion();
         newTab ? adapter.openInNewTab(href) : adapter.selectFile(href);
+
+        // Reveal the conversations of the selected changed file
+        const node = this.$jstree.get_node($target.closest('.jstree-node'));
+        if (node && node.original && !node.original.commentsExpanded) this._toggleComments(node);
       }
     }
+  }
+
+  /**
+   * Shows or hides the review conversations below a changed file.
+   */
+  _toggleComments(node) {
+    const patch = node && node.original && node.original.patch;
+    if (!patch || !patch.threads || !patch.threads.length) return;
+
+    node.original.commentsExpanded = !node.original.commentsExpanded;
+    this.$jstree.redraw_node(node.id);
+  }
+
+  /**
+   * Updates the viewed state of a changed file.
+   */
+  _setViewed(path, viewed) {
+    const node = this.$jstree.get_node(NODE_PREFIX + path);
+    if (!node || !node.original || !node.original.patch) return;
+
+    node.original.patch.viewed = viewed;
+    node.li_attr.class = viewed ? VIEWED_CLASS : '';
+    $(this.$jstree.get_node(node.id, true)).toggleClass(VIEWED_CLASS, viewed);
+  }
+
+  _renderThreads(threads) {
+    const sorted = threads.slice().sort((a, b) => {
+      // Current conversations by line, outdated ones last
+      const lineA = a.line == null ? Infinity : a.line;
+      const lineB = b.line == null ? Infinity : b.line;
+      return lineA - lineB || a.comments[0].createdAt.localeCompare(b.comments[0].createdAt);
+    });
+
+    const items = sorted.map((thread) => {
+      const [first] = thread.comments;
+      const last = thread.comments[thread.comments.length - 1];
+      const replies = thread.comments.length - 1;
+      const status = thread.resolved ? 'Resolved' : thread.outdated ? 'Outdated' : '';
+      const line = thread.line || thread.originalLine;
+      const title = `${line ? `Line ${line}: ` : ''}${first.body}`;
+
+      return (
+        `<a class="treehub-comment${thread.resolved ? ' treehub-comment--resolved' : ''}" ` +
+        `href="${escapeHtml(thread.url)}" title="${escapeHtml(title.slice(0, 500))}">` +
+        '<div class="treehub-comment-header">' +
+        `<span class="treehub-comment-author">${escapeHtml(first.author)}</span>` +
+        `<span class="treehub-comment-time">${timeAgo(first.createdAt)}</span>` +
+        (status ? `<span class="treehub-comment-status">${status}</span>` : '') +
+        '</div>' +
+        `<div class="treehub-comment-body">${escapeHtml(first.body.replace(/\s+/g, ' ').trim()) || '&nbsp;'}</div>` +
+        (replies
+          ? '<div class="treehub-comment-replies">' +
+            `${replies} ${replies === 1 ? 'reply' : 'replies'} - last by ` +
+            `<b>${escapeHtml(last.author)}</b> ${timeAgo(last.createdAt)}</div>`
+          : '') +
+        '</a>'
+      );
+    });
+
+    return `<div class="treehub-comments">${items.join('')}</div>`;
   }
 
   async syncSelection(repo) {
     const $jstree = this.$jstree;
     if (!$jstree) return;
+
+    // On a diff page, select the file whose diff is targeted, e.g. #diff-<sha256>R12
+    const diffAnchor = location.hash.match(/^#diff-([0-9a-f]{64})/);
+    const diffPath = diffAnchor && this.adapter.getPathFromDiffAnchor(diffAnchor[1]);
+    if (diffPath) {
+      const nodeId = NODE_PREFIX + diffPath;
+      if ($jstree.get_node(nodeId) && !$jstree.is_selected(nodeId)) {
+        $jstree.deselect_all();
+        $jstree.select_node(nodeId);
+      }
+      return;
+    }
 
     // Convert /username/reponame/object_type/branch/path to path
     const path = decodeURIComponent(location.pathname);

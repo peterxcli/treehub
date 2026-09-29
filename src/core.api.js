@@ -40,7 +40,7 @@ const GH_RESERVED_REPO_NAMES = ['followers', 'following', 'repositories'];
 const GH_404_SEL = '#parallax_wrapper';
 const GH_RAW_CONTENT = 'body > pre';
 
-class OctotreeService {
+class TreeHubService {
   constructor() {
     this.reset();
   }
@@ -59,7 +59,7 @@ class OctotreeService {
 
   reset() {
     this.getAccessToken = this._getAccessToken;
-    this.shouldShowOctotree = this._shouldShowOctotree;
+    this.shouldShowTreeHub = this._shouldShowTreeHub;
     this.getInvalidTokenMessage = this._getInvalidTokenMessage;
     this.setNodeIconAndText = this._setNodeIconAndText;
   }
@@ -87,7 +87,7 @@ class OctotreeService {
     }
   }
 
-  async _shouldShowOctotree() {
+  async _shouldShowTreeHub() {
     if ($(GH_404_SEL).length) {
       return false;
     }
@@ -115,4 +115,4 @@ class OctotreeService {
   }
 }
 
-window.octotree = new OctotreeService();
+window.treehub = new TreeHubService();

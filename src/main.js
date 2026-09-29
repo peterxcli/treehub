@@ -1,25 +1,34 @@
 $(document).ready(() => {
-  octotree.load(loadExtension);
+  treehub.load(loadExtension);
 
   async function loadExtension(activationOpts = {}) {
     const $html = $('html');
     const $document = $(document);
     const $dom = $(TEMPLATE);
-    const $sidebar = $dom.find('.octotree-sidebar');
-    const $toggler = $sidebar.find('.octotree-toggle').hide();
-    const $views = $sidebar.find('.octotree-view');
-    const $spinner = $sidebar.find('.octotree-spin');
-    const $pinner = $sidebar.find('.octotree-pin');
+    $dom.find('[data-octicon]').each(function () {
+      $(this).replaceWith(octicon($(this).attr('data-octicon')));
+    });
+    const $sidebar = $dom.find('.treehub-sidebar');
+    const $toggler = $sidebar.find('.treehub-toggle').hide();
+    const $views = $sidebar.find('.treehub-view');
+    const $spinner = $sidebar.find('.treehub-spin');
+    const $pinner = $sidebar.find('.treehub-pin');
+    const $docker = $sidebar.find('.treehub-dock');
     const adapter = new GitHub();
     const treeView = new TreeView($dom, adapter);
     const optsView = new OptionsView($dom, adapter);
     const helpPopup = new HelpPopup($dom);
     const errorView = new ErrorView($dom);
+    const prNavView = new PullRequestNavView($dom, adapter);
+    const fullFileView = new FullFileView(adapter);
 
     let currRepo = false;
     let hasError = false;
+    let dock = 'left';
 
     $pinner.click(togglePin);
+    $docker.click(toggleDock);
+    applyDock(await extStore.get(STORE.DOCK));
     await setupSidebarFloatingBehaviors();
     setHotkeys(await extStore.get(STORE.HOTKEYS));
 
@@ -37,7 +46,7 @@ $(document).ready(() => {
 
             optsView.$toggler.removeClass('selected');
 
-            if (adapter.isOnPRPage && await extStore.get(STORE.PR)) {
+            if ((adapter.isOnPRPage || adapter.isOnCommitPage) && await extStore.get(STORE.PR)) {
               treeView.$tree.jstree('open_all');
             }
           }
@@ -53,12 +62,16 @@ $(document).ready(() => {
         .on(EVENT.FETCH_ERROR, (event, err) => showError(err));
     }
 
+    $(prNavView).on(EVENT.VIEW_CLOSE, (event, data) => {
+      if (data && data.showSettings) optsView.toggle(true);
+    });
+
     $(extStore)
       .on(EVENT.STORE_CHANGE, optionsChanged);
 
     $document
-      .on(EVENT.REQ_START, () => $spinner.addClass('octotree-spin--loading'))
-      .on(EVENT.REQ_END, () => $spinner.removeClass('octotree-spin--loading'))
+      .on(EVENT.REQ_START, () => $spinner.addClass('treehub-spin--loading'))
+      .on(EVENT.REQ_END, () => $spinner.removeClass('treehub-spin--loading'))
       .on(EVENT.LAYOUT_CHANGE, layoutChanged)
       .on(EVENT.TOGGLE_PIN, layoutChanged)
       .on(EVENT.LOC_CHANGE, (event, reload = false) => tryLoadRepo(reload));
@@ -71,10 +84,11 @@ $(document).ready(() => {
 
     $document.trigger(EVENT.SIDEBAR_HTML_INSERTED);
 
-    adapter.init($sidebar);
+    adapter.init($sidebar, dock);
     await helpPopup.init();
+    await fullFileView.init();
 
-    await octotree.activate(
+    await treehub.activate(
       {
         adapter,
         $document,
@@ -109,7 +123,14 @@ $(document).ready(() => {
             reload = true;
             break;
           case STORE.PR:
-            reload = adapter.isOnPRPage;
+          case STORE.COMMENTS:
+            reload = adapter.isOnPRPage || adapter.isOnCommitPage;
+            break;
+          case STORE.VIEW_FULL:
+            fullFileView.setEnabled(newValue);
+            break;
+          case STORE.DOCK:
+            onDockChanged(newValue);
             break;
           case STORE.HOVEROPEN:
             handleHoverOpenOption(newValue);
@@ -123,7 +144,7 @@ $(document).ready(() => {
         }
       });
 
-      if (await octotree.applyOptions(changes)) {
+      if (await treehub.applyOptions(changes)) {
         reload = true;
       }
 
@@ -133,8 +154,10 @@ $(document).ready(() => {
     }
 
     async function tryLoadRepo(reload) {
-      const token = await octotree.getAccessToken();
+      const token = await treehub.getAccessToken();
       await adapter.getRepoFromPath(currRepo, token, async (err, repo) => {
+        prNavView.setRepo(err ? null : repo);
+
         if (err) {
           // Error making API, likely private repo but no token
           await showError(err);
@@ -227,9 +250,24 @@ $(document).ready(() => {
       await toggleSidebar(sidebarPinned);
     }
 
+    function applyDock(newDock) {
+      dock = newDock === 'right' ? 'right' : 'left';
+      $html.toggleClass(DOCK_RIGHT_CLASS, dock === 'right');
+    }
+
+    async function toggleDock() {
+      await extStore.set(STORE.DOCK, dock === 'right' ? 'left' : 'right');
+    }
+
+    async function onDockChanged(newDock) {
+      applyDock(newDock);
+      adapter.setDock($sidebar, dock);
+      await layoutChanged();
+    }
+
     async function layoutChanged(save = false) {
       const width = $sidebar.outerWidth();
-      adapter.updateLayout(isSidebarPinned(), isSidebarVisible(), width);
+      adapter.updateLayout(isSidebarPinned(), isSidebarVisible(), width, dock);
       if (save === true) {
         await extStore.set(STORE.WIDTH, width);
       }

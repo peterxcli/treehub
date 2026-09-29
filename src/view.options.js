@@ -1,13 +1,13 @@
 class OptionsView {
   constructor($dom, adapter) {
     this.adapter = adapter;
-    this.$toggler = $dom.find('.octotree-settings').click(this.toggle.bind(this));
-    this.$view = $dom.find('.octotree-settings-view').submit((event) => {
+    this.$toggler = $dom.find('.treehub-settings').click(this.toggle.bind(this));
+    this.$view = $dom.find('.treehub-settings-view').submit((event) => {
       event.preventDefault();
       this.toggle(false);
     });
 
-    this.$view.find('a.octotree-create-token').attr('href', this.adapter.getCreateTokenUrl());
+    this.$view.find('a.treehub-create-token').attr('href', this.adapter.getCreateTokenUrl());
 
     this.loadElements();
 

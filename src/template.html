@@ -1,73 +1,99 @@
 <div>
-  <nav class="octotree-sidebar">
-    <div class="octotree-toggle">
-      <i class="octotree-toggle-icon" role="button"></i> <span>Octotree</span>
+  <nav class="treehub-sidebar">
+    <div class="treehub-toggle">
+      <i class="treehub-toggle-icon" role="button"></i> <span>TreeHub</span>
 
       <div class="popup">
         <div class="arrow"></div>
         <div class="content">
-          Hi there, this is Octotree. Move mouse over this button to display the code tree. You can also press the
+          Hi there, this is TreeHub. Move mouse over this button to display the code tree. You can also press the
           shortkey <kbd>cmd shift s</kbd> (or <kbd>ctrl shift s</kbd>).
         </div>
       </div>
     </div>
 
-    <div class="octotree-main-icons">
-      <a class="octotree-pin" data-store="PINNED">
-        <span class="tooltipped tooltipped-s" aria-label="Pin this sidebar"> <i class="octotree-icon-pin"></i> </span>
+    <div class="treehub-main-icons">
+      <a class="treehub-pin" data-store="PINNED">
+        <span class="tooltipped tooltipped-s" aria-label="Pin this sidebar"> <i class="treehub-icon-pin"></i> </span>
       </a>
 
-      <a class="octotree-settings">
-        <span class="tooltipped tooltipped-s" aria-label="Settings"> <i class="octotree-icon-settings"></i> </span>
+      <a class="treehub-settings">
+        <span class="tooltipped tooltipped-s" aria-label="Settings"> <i class="treehub-icon-settings"></i> </span>
       </a>
     </div>
 
-    <div class="octotree-views">
-      <div class="octotree-view octotree-tree-view current">
-        <div class="octotree-view-header"></div>
-        <div class="octotree-view-body"></div>
-        <a class="octotree-spin"> <span class="octotree-spin--loader"></span> </a>
+    <div class="treehub-sub-icons">
+      <a class="treehub-pr-nav-toggle">
+        <span class="tooltipped tooltipped-s" aria-label="Pull requests"><i data-octicon="pullRequest"></i></span>
+      </a>
+    </div>
+
+    <div class="treehub-pr-nav" role="dialog" aria-label="Pull requests">
+      <div class="treehub-pr-nav-header">
+        <button type="button" class="treehub-pr-nav-filter" aria-haspopup="menu">
+          <span class="treehub-pr-nav-filter-label">All open pull requests</span>
+          <i data-octicon="triangleDown"></i>
+        </button>
+        <button type="button" class="treehub-pr-nav-close" aria-label="Close"><i data-octicon="x"></i></button>
+        <ul class="treehub-pr-nav-menu" role="menu"></ul>
+      </div>
+      <div class="treehub-pr-nav-list"></div>
+    </div>
+
+    <div class="treehub-views">
+      <div class="treehub-view treehub-tree-view current">
+        <div class="treehub-view-header"></div>
+        <div class="treehub-view-body"></div>
+        <a class="treehub-spin"> <span class="treehub-spin--loader"></span> </a>
       </div>
 
-      <div class="octotree-view octotree-error-view">
-        <div class="octotree-view-header octotree-header-text-top"></div>
-        <form class="octotree-view-body"><div class="message"></div></form>
+      <div class="treehub-view treehub-error-view">
+        <div class="treehub-view-header treehub-header-text-top"></div>
+        <form class="treehub-view-body"><div class="message"></div></form>
       </div>
 
-      <div class="octotree-view octotree-settings-view">
-        <div class="octotree-view-header octotree-header-text-top">Settings</div>
-        <form class="octotree-view-body">
+      <div class="treehub-view treehub-settings-view">
+        <div class="treehub-view-header treehub-header-text-top">Settings</div>
+        <form class="treehub-view-body">
           <div>
             <label>GitHub access token</label>
-            <div class="octotree-token-actions">
-              <a class="octotree-create-token" target="_blank" tabindex="-1"
+            <div class="treehub-token-actions">
+              <a class="treehub-create-token" target="_blank" tabindex="-1"
                 ><!--
                 --><span class="tooltipped tooltipped-n" aria-label="Generate new token"
-                  ><i class="octotree-icon-key"></i></span
+                  ><i class="treehub-icon-key"></i></span
                 ><!--
               --></a>
               <a
-                class="octotree-help"
-                href="https://github.com/ovity/octotree#access-token"
+                class="treehub-help"
+                href="https://github.com/peterxcli/treehub#access-token"
                 target="_blank"
                 tabindex="-1"
               >
                 <span class="tooltipped tooltipped-n" aria-label="Learn more">
-                  <i class="octotree-icon-help"></i>
+                  <i class="treehub-icon-help"></i>
                 </span>
               </a>
             </div>
-            <input type="text" class="form-control input-block" data-store="TOKEN" />
-            <div class="octotree-disclaimer text-gray">Token is stored in local storage</div>
+            <input
+              type="text"
+              class="form-control input-block treehub-secret"
+              data-store="TOKEN"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <div class="treehub-disclaimer text-gray">
+              Stored only in this browser and sent only to GitHub. Commenting needs the repo scope.
+            </div>
           </div>
 
           <div>
             <div>
               <label>Hotkeys</label>
-              <div class="octotree-token-actions">
-                <a class="octotree-help" href="https://github.com/ovity/octotree#hotkeys" target="_blank" tabindex="-1">
+              <div class="treehub-token-actions">
+                <a class="treehub-help" href="https://github.com/peterxcli/treehub#hotkeys" target="_blank" tabindex="-1">
                   <span class="tooltipped tooltipped-n" aria-label="Learn more">
-                    <i class="octotree-icon-help"></i>
+                    <i class="treehub-icon-help"></i>
                   </span>
                 </a>
               </div>
@@ -92,8 +118,14 @@
             <label><input type="checkbox" data-store="PR" /> <span>Show pull request changes</span></label>
           </div>
           <div>
+            <label><input type="checkbox" data-store="COMMENTS" /> <span>Show pull request comments</span></label>
+          </div>
+          <div>
+            <label><input type="checkbox" data-store="VIEW_FULL" /> <span>Show "View full" in pull request diffs</span></label>
+          </div>
+          <div>
             <label><input type="checkbox" data-store="LAZYLOAD" /> <span>Lazy-load code tree</span></label>
-            <span class="octotree-disclaimer is-margin-left text-gray">Speed up large repositories</span>
+            <span class="treehub-disclaimer is-margin-left text-gray">Speed up large repositories</span>
           </div>
 
           <div><button class="btn btn-primary">Apply settings</button></div>
@@ -101,6 +133,17 @@
       </div>
     </div>
 
-    <div class="octotree-footer"></div>
+    <div class="treehub-footer">
+      <a class="treehub-dock">
+        <span class="tooltipped tooltipped-nw" aria-label="Change sidebar docking location">
+          <svg class="treehub-octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path
+              d="M1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 14.25 15H1.75A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1ZM1.5 2.75v10.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25Z"
+            ></path>
+            <rect x="2.5" y="3.5" width="4" height="9" rx=".75"></rect>
+          </svg>
+        </span>
+      </a>
+    </div>
   </nav>
 </div>

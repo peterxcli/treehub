@@ -25,7 +25,7 @@ class ExtStore {
 
   _setupOnChangeEvent() {
     window.addEventListener('storage', (evt) => {
-      if (this._isOctotreeKey(evt.key)) {
+      if (this._isTreeHubKey(evt.key)) {
         this._notifyChange(evt.key, evt.oldValue, evt.newValue);
       }
     });
@@ -33,7 +33,7 @@ class ExtStore {
     if (!this._isSafari) {
       chrome.storage.onChanged.addListener((changes) => {
         Object.entries(changes).forEach(([key, change]) => {
-          if (this._isOctotreeKey(key)) {
+          if (this._isTreeHubKey(key)) {
             this._notifyChange(key, change.oldValue, change.newValue);
           }
         });
@@ -41,8 +41,8 @@ class ExtStore {
     }
   }
 
-  _isOctotreeKey(key) {
-    return key.startsWith('octotree');
+  _isTreeHubKey(key) {
+    return key.startsWith('treehub');
   }
 
   // Debounce and group the trigger of EVENT.STORE_CHANGE because the
@@ -134,7 +134,7 @@ class ExtStore {
           localStorage.setItem(key, value);
         } catch (e) {
           const msg =
-            'Octotree cannot save its settings. ' +
+            'TreeHub cannot save its settings. ' +
             'If the local storage for this domain is full, please clean it up and try again.';
           console.error(msg, e);
         }
