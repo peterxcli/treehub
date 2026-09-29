@@ -44,6 +44,21 @@ npm run lint
 
 Then load `tmp/chrome` as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked). `npm run dist` zips each build into `dist/`; `dist/chrome.zip` is the Chrome Web Store package.
 
+## Releasing
+
+Publishing a [GitHub release](https://github.com/peterxcli/treehub/releases/new) with a tag like `v1.2.3` builds TreeHub with that version, attaches the package to the release and submits it to the Chrome Web Store ([workflow](.github/workflows/publish.yml)). Pre-releases are skipped. The version must be higher than the one in the store.
+
+The workflow needs, in the repository settings:
+
+- secret `CWS_SERVICE_ACCOUNT`: JSON key of a Google Cloud service account, with the Chrome Web Store API enabled in its project and its email added in the Account section of the [Developer Dashboard](https://chrome.google.com/webstore/devconsole) ([guide](https://developer.chrome.com/docs/webstore/service-accounts)),
+- variables `CWS_PUBLISHER_ID` and `CWS_EXTENSION_ID`.
+
+Check the setup without publishing anything:
+
+```bash
+CWS_SERVICE_ACCOUNT_FILE=key.json CWS_PUBLISHER_ID=... CWS_EXTENSION_ID=... npm run publish:chrome -- --status
+```
+
 ## License and credits
 
 TreeHub is free software licensed under the [GNU Affero General Public License v3.0](LICENSE).
