@@ -1,5 +1,6 @@
 # Publishing a GitHub release tagged vX.Y.Z builds TreeHub with version X.Y.Z, attaches the package to the release
-# and submits it to the Chrome Web Store. Pre-releases are skipped.
+# and submits it to the Chrome Web Store. Pre-releases are skipped. Running the workflow manually only checks the
+# setup: it builds the package and prints the status of the item, without uploading anything.
 #
 # Repository settings needed:
 #   secret   CWS_SERVICE_ACCOUNT  JSON key of the Google Cloud service account added in the Chrome Web Store
@@ -11,6 +12,7 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -35,6 +37,7 @@ jobs:
       - run: npm ci
 
       - name: Use the release tag as the version
+        if: github.event_name == 'release'
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
@@ -52,6 +55,7 @@ jobs:
       - run: npm run dist
 
       - name: Attach the package to the release
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
@@ -60,7 +64,16 @@ jobs:
           cp dist/chrome.zip "$package"
           gh release upload "$TAG" "$package" --clobber
 
+      - name: Check the Chrome Web Store setup
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CWS_SERVICE_ACCOUNT: ${{ secrets.CWS_SERVICE_ACCOUNT }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+        run: node scripts/publish-chrome.js --status
+
       - name: Upload to the Chrome Web Store and submit for review
+        if: github.event_name == 'release'
         env:
           CWS_SERVICE_ACCOUNT: ${{ secrets.CWS_SERVICE_ACCOUNT }}
           CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}

@@ -53,7 +53,7 @@ The workflow needs, in the repository settings:
 - secret `CWS_SERVICE_ACCOUNT`: JSON key of a Google Cloud service account, with the Chrome Web Store API enabled in its project and its email added in the Account section of the [Developer Dashboard](https://chrome.google.com/webstore/devconsole) ([guide](https://developer.chrome.com/docs/webstore/service-accounts)),
 - variables `CWS_PUBLISHER_ID` and `CWS_EXTENSION_ID`.
 
-Check the setup without publishing anything:
+Check the setup without publishing anything by running the workflow manually (Actions → Publish → Run workflow), or locally:
 
 ```bash
 CWS_SERVICE_ACCOUNT_FILE=key.json CWS_PUBLISHER_ID=... CWS_EXTENSION_ID=... npm run publish:chrome -- --status
