@@ -83,8 +83,10 @@ async function call(method, url, token, body, contentType) {
     data = {message: text};
   }
   if (!res.ok) {
-    const message = (data.error && data.error.message) || data.message || res.statusText;
-    throw new Error(`${method} ${url.replace(API, '')} failed (${res.status}): ${message}`);
+    const error = data.error || {};
+    const message = error.message || data.message || res.statusText;
+    const details = error.details && error.details.length ? `\nDetails: ${JSON.stringify(error.details)}` : '';
+    throw new Error(`${method} ${url.replace(API, '')} failed (${res.status}): ${message}${details}`);
   }
   return data;
 }
