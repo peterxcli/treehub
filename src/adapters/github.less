@@ -97,7 +97,7 @@
         width: 100%;
         height: @header-height;
         margin: 0;
-        padding-right: 65px;
+        padding-right: 85px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1453,5 +1453,132 @@ html.treehub-ff-opened {
   }
   .hljs-deletion {
     color: var(--color-prettylights-syntax-markup-deleted-text, #82071e);
+  }
+}
+
+//
+// Account, bookmarks and review queue (view.hub.js)
+//
+.treehub-sidebar.treehub-github-sidebar {
+  a.treehub-home {
+    position: relative;
+    z-index: 1; // above the view header, like the pin and settings buttons
+    width: @icon-size;
+    height: @icon-size;
+    line-height: 0;
+    cursor: pointer;
+
+    .treehub-octicon {
+      fill: @gray;
+    }
+
+    &:hover .treehub-octicon {
+      fill: white;
+    }
+  }
+
+  // Transparent while the repository or pull request is not added, bold once it is
+  .treehub-sub-icons a.treehub-hub-toggle {
+    .treehub-octicon {
+      opacity: 0.55;
+      transition: opacity 0.15s, fill 0.15s;
+    }
+
+    .treehub-when-on {
+      display: none;
+    }
+
+    &:hover .treehub-octicon {
+      opacity: 1;
+    }
+
+    &.added {
+      .treehub-octicon {
+        fill: white;
+        opacity: 1;
+      }
+
+      .treehub-when-on {
+        display: inline;
+      }
+
+      .treehub-when-off {
+        display: none;
+      }
+    }
+
+    &.pending {
+      pointer-events: none;
+
+      .treehub-octicon {
+        opacity: 0.3;
+      }
+    }
+  }
+
+  .treehub-hub-flash {
+    display: none;
+    position: absolute;
+    top: @header-height + 4px;
+    right: 8px;
+    left: 8px;
+    z-index: 3;
+    padding: 8px 10px;
+    border: 1px solid var(--borderColor-danger-muted, #ff818266);
+    border-radius: 6px;
+    background-color: var(--bgColor-danger-muted, #ffebe9);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    color: var(--fgColor-default, @dark);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+
+    &.visible {
+      display: block;
+    }
+  }
+
+  .treehub-settings-view .treehub-account {
+    .treehub-sign-in {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 2px 0 4px;
+
+      .treehub-octicon {
+        fill: currentColor;
+      }
+    }
+
+    .treehub-account-in {
+      display: none;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    &.signed-in {
+      .treehub-account-in {
+        display: flex;
+      }
+
+      .treehub-account-out {
+        display: none;
+      }
+    }
+
+    .treehub-account-avatar {
+      border-radius: 50%;
+    }
+
+    .treehub-account-actions {
+      margin-left: auto;
+      font-size: 12px;
+
+      a {
+        margin-left: 8px;
+        cursor: pointer;
+      }
+    }
   }
 }

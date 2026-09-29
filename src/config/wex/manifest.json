@@ -1,7 +1,7 @@
 {
   "name": "TreeHub",
   "version": "$VERSION",
-  "description": "Code tree for GitHub with pull request review tools: changed files, review threads, full-file diffs and PR navigation.",
+  "description": "Code tree for GitHub with pull request review tools, repository bookmarks and a review queue.",
   "homepage_url": "https://github.com/peterxcli/treehub",
   "author": "peterxcli",
   "manifest_version": 3,
@@ -11,7 +11,18 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage"],
+  "action": {
+    "default_title": "TreeHub",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "identity", "alarms"],
   "web_accessible_resources": [
     {
       "resources": ["*.woff2", "*.png", "*.gif"],

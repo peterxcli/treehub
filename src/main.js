@@ -21,6 +21,7 @@ $(document).ready(() => {
     const errorView = new ErrorView($dom);
     const prNavView = new PullRequestNavView($dom, adapter);
     const fullFileView = new FullFileView(adapter);
+    const hubView = new HubView($dom);
 
     let currRepo = false;
     let hasError = false;
@@ -87,6 +88,7 @@ $(document).ready(() => {
     adapter.init($sidebar, dock);
     await helpPopup.init();
     await fullFileView.init();
+    await hubView.init();
 
     await treehub.activate(
       {
@@ -112,6 +114,7 @@ $(document).ready(() => {
      */
     async function optionsChanged(event, changes) {
       let reload = false;
+      const hasToken = !!(await extStore.get(STORE.TOKEN));
 
       Object.keys(changes).forEach((storeKey) => {
         const [oldValue, newValue] = changes[storeKey];
@@ -121,6 +124,10 @@ $(document).ready(() => {
           case STORE.LAZYLOAD:
           case STORE.ICONS:
             reload = true;
+            break;
+          case HUB_STORE.AUTH:
+            // Signing in or out changes the GitHub token, unless one is set in the settings
+            reload = reload || !hasToken;
             break;
           case STORE.PR:
           case STORE.COMMENTS:
@@ -157,6 +164,7 @@ $(document).ready(() => {
       const token = await treehub.getAccessToken();
       await adapter.getRepoFromPath(currRepo, token, async (err, repo) => {
         prNavView.setRepo(err ? null : repo);
+        hubView.setRepo(err ? null : repo);
 
         if (err) {
           // Error making API, likely private repo but no token

@@ -65,14 +65,18 @@ class TreeHubService {
   }
 
   // Private
-  _getAccessToken() {
-    return window.extStore.get(window.STORE.TOKEN);
+  async _getAccessToken() {
+    const token = await window.extStore.get(window.STORE.TOKEN);
+    if (token) return token;
+    // Signed in to TreeHub (see view.hub.js): the token GitHub gave when signing in
+    const auth = await window.extStore.get('treehub.auth');
+    return (auth && auth.githubToken) || token;
   }
 
   _getInvalidTokenMessage({responseStatus, requestHeaders}) {
     return (
       'The GitHub access token is invalid. ' +
-      'Please go to <a class="settings-btn">Settings</a> and update the token.'
+      'Please go to <a class="settings-btn">Settings</a> and sign in again or update the token.'
     );
   }
 

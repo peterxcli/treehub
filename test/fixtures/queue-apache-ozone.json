@@ -1,0 +1,1232 @@
+{
+ "refs": [
+  {
+   "repo": "apache/ozone",
+   "number": 11302
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 10183
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 11321
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 11314
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 11325
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 10765
+  },
+  {
+   "repo": "apache/ozone",
+   "number": 99999999
+  }
+ ],
+ "result": {
+  "data": {
+   "pr0": {
+    "pullRequest": {
+     "number": 11302,
+     "title": "HDDS-16258. Refactor streaming block reads and fix checksum verification for variable-sized chunks",
+     "url": "https://github.com/apache/ozone/pull/11302",
+     "state": "OPEN",
+     "isDraft": false,
+     "mergedAt": null,
+     "closedAt": null,
+     "updatedAt": "2026-09-28T13:47:28Z",
+     "author": {
+      "login": "peterxcli"
+     },
+     "reviewDecision": null,
+     "mergeable": "MERGEABLE",
+     "headRefOid": "cc04676ab7e55de0a0674ee865f56227e8baf760",
+     "viewerLatestReview": {
+      "state": "COMMENTED",
+      "submittedAt": "2026-09-25T10:45:40Z",
+      "commit": {
+       "oid": "4dc5af7361329ae2a1c6e1af794e41f04fad1cc5"
+      }
+     },
+     "viewerLatestReviewRequest": null,
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "szetszwo"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "smengcl"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "chungen0126"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "jojochuang"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "totalCount": 12,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "8bff57b02c40e82f4b23e23abd0c5a3803103944",
+         "committedDate": "2026-09-22T17:15:20Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "cfd49a2b3f664b8074628b3f6ff8bada67d7b4f6",
+         "committedDate": "2026-09-22T17:28:33Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "c5f8eb6118231c569f9ac04218097128fbd9f766",
+         "committedDate": "2026-09-22T17:42:21Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "31d0ffbc86086ef655ed9e6d1ac81ff762c3673b",
+         "committedDate": "2026-09-22T17:48:50Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "cdae9ed9f3178092f4e698d14d3ed8c9f1e89a9f",
+         "committedDate": "2026-09-22T18:07:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "da3fb37210f8c913c3c13fa1e0d28908c65672c1",
+         "committedDate": "2026-09-22T18:35:30Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "f0dfd43242ef9cee6e8677cdacbffdd57c8644ff",
+         "committedDate": "2026-09-22T18:43:33Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "4dc5af7361329ae2a1c6e1af794e41f04fad1cc5",
+         "committedDate": "2026-09-22T18:50:49Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "ece80ba2f238fa17f7d73cc0cece02ac67357cc8",
+         "committedDate": "2026-09-27T12:52:55Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "65050082a8f73409c8aa2dd83fb2e527a113e629",
+         "committedDate": "2026-09-27T13:18:39Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "ca5728f6649ac3ccb23c33ea5d39d57628870724",
+         "committedDate": "2026-09-27T13:20:52Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "cc04676ab7e55de0a0674ee865f56227e8baf760",
+         "committedDate": "2026-09-28T13:47:26Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": [
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "copilot-pull-request-reviewer"
+           },
+           "createdAt": "2026-09-22T17:33:41Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4074532502"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "copilot-pull-request-reviewer"
+           },
+           "createdAt": "2026-09-22T17:33:41Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4074532545"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "copilot-pull-request-reviewer"
+           },
+           "createdAt": "2026-09-22T17:33:42Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4074532578"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-09-22T18:55:01Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4075274933"
+          },
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-22T19:03:42Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4075366627"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-22T18:55:16Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4075277988"
+          },
+          {
+           "author": {
+            "login": "smengcl"
+           },
+           "createdAt": "2026-09-25T02:48:09Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4100557173"
+          },
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-25T10:45:40Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4103765133"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-09-23T17:33:31Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4085390833"
+          },
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-23T22:35:53Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4087982131"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-09-23T17:48:04Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4085526141"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-09-23T18:07:14Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4085692491"
+          },
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-23T22:03:34Z",
+           "url": "https://github.com/apache/ozone/pull/11302#discussion_r4087763091"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "timelineItems": {
+      "nodes": [
+       {
+        "__typename": "ReadyForReviewEvent",
+        "createdAt": "2026-09-22T18:52:03Z"
+       }
+      ]
+     }
+    }
+   },
+   "pr1": {
+    "pullRequest": {
+     "number": 10183,
+     "title": "HDDS-15167. Broaden commit conflict detection for conditional writes",
+     "url": "https://github.com/apache/ozone/pull/10183",
+     "state": "OPEN",
+     "isDraft": true,
+     "mergedAt": null,
+     "closedAt": null,
+     "updatedAt": "2026-09-28T21:36:45Z",
+     "author": {
+      "login": "peterxcli"
+     },
+     "reviewDecision": null,
+     "mergeable": "MERGEABLE",
+     "headRefOid": "e22b0f6ab0dfaa21ed77d14334d5eadafadb86df",
+     "viewerLatestReview": {
+      "state": "COMMENTED",
+      "submittedAt": "2026-05-05T06:18:47Z",
+      "commit": {
+       "oid": "576fcce9e6994a06481b364f164c6cba33e692a0"
+      }
+     },
+     "viewerLatestReviewRequest": null,
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "jojochuang"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "ivandika3"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "Gargi-jais11"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "totalCount": 8,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "cc9aa5d36170a29696f8436e438212431b3298b7",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "21afa18c5acf85d2420cfd4cd2d3d5b145e79f9d",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "c345f113e91de43d6e6ab42e9dccda623c5406e0",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "80bd25c262f3d930e3da378a08305d9c3c28b7b9",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "8461e1330b791310f69544728af0f7f4090e3e42",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "3cd45a9bbc640f43a4433413c56e335f75f636c2",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "f52be905a97d63cfd9595cab7932f30445433ef7",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "e22b0f6ab0dfaa21ed77d14334d5eadafadb86df",
+         "committedDate": "2026-09-28T21:28:31Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": [
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-05-04T19:02:13Z",
+           "url": "https://github.com/apache/ozone/pull/10183#discussion_r3183819413"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-05-04T19:37:33Z",
+           "url": "https://github.com/apache/ozone/pull/10183#discussion_r3184021436"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-05-05T05:07:42Z",
+           "url": "https://github.com/apache/ozone/pull/10183#discussion_r3186148091"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-05-05T05:29:45Z",
+           "url": "https://github.com/apache/ozone/pull/10183#discussion_r3186222852"
+          },
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-05-05T06:18:47Z",
+           "url": "https://github.com/apache/ozone/pull/10183#discussion_r3186398479"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "timelineItems": {
+      "nodes": [
+       {
+        "__typename": "ReadyForReviewEvent",
+        "createdAt": "2026-05-04T16:23:53Z"
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-05-04T16:37:19Z",
+        "actor": {
+         "login": "YutaLin"
+        }
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-05-05T07:07:25Z",
+        "actor": {
+         "login": "ivandika3"
+        }
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-06-24T05:59:06Z",
+        "actor": {
+         "login": "peterxcli"
+        }
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-09-24T03:59:44Z",
+        "actor": {
+         "login": "peterxcli"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "pr2": {
+    "pullRequest": {
+     "number": 11321,
+     "title": "HDDS-16441. Orphaned snapshot diff task marks a resubmitted job DONE with another run's metadata",
+     "url": "https://github.com/apache/ozone/pull/11321",
+     "state": "OPEN",
+     "isDraft": false,
+     "mergedAt": null,
+     "closedAt": null,
+     "updatedAt": "2026-09-26T14:49:07Z",
+     "author": {
+      "login": "smengcl"
+     },
+     "reviewDecision": null,
+     "mergeable": "MERGEABLE",
+     "headRefOid": "7217398b4fa894243b0eb25e74941652d868b57d",
+     "viewerLatestReview": {
+      "state": "COMMENTED",
+      "submittedAt": "2026-09-26T14:49:07Z",
+      "commit": {
+       "oid": "7217398b4fa894243b0eb25e74941652d868b57d"
+      }
+     },
+     "viewerLatestReviewRequest": null,
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "SaketaChalamchala"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "jojochuang"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "totalCount": 1,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "7217398b4fa894243b0eb25e74941652d868b57d",
+         "committedDate": "2026-09-25T01:06:26Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": [
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-26T14:48:09Z",
+           "url": "https://github.com/apache/ozone/pull/11321#discussion_r4111708010"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-26T14:49:04Z",
+           "url": "https://github.com/apache/ozone/pull/11321#discussion_r4111710220"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "timelineItems": {
+      "nodes": [
+       {
+        "__typename": "ReadyForReviewEvent",
+        "createdAt": "2026-09-25T03:30:24Z"
+       }
+      ]
+     }
+    }
+   },
+   "pr3": {
+    "pullRequest": {
+     "number": 11314,
+     "title": "HDDS-16395. Add lock-free StreamBlock pread",
+     "url": "https://github.com/apache/ozone/pull/11314",
+     "state": "OPEN",
+     "isDraft": false,
+     "mergedAt": null,
+     "closedAt": null,
+     "updatedAt": "2026-09-29T03:30:21Z",
+     "author": {
+      "login": "taklwu"
+     },
+     "reviewDecision": null,
+     "mergeable": "MERGEABLE",
+     "headRefOid": "594611e9d8da4831fe9d4403b757b68c9c8e8e21",
+     "viewerLatestReview": {
+      "state": "COMMENTED",
+      "submittedAt": "2026-09-28T07:27:25Z",
+      "commit": {
+       "oid": "4cb686c6fd0017cf2c92460b7aa3185d2d8f733b"
+      }
+     },
+     "viewerLatestReviewRequest": {
+      "id": "RR_kwDODKiyxs7evv4x"
+     },
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "peterxcli"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "totalCount": 4,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "199f6212beca66238a766b9553c651cedf84e36c",
+         "committedDate": "2026-09-24T07:45:00Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "4cb686c6fd0017cf2c92460b7aa3185d2d8f733b",
+         "committedDate": "2026-09-24T07:54:51Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "b14931774951dc34b1f1150cd3d82b2e6a1460d3",
+         "committedDate": "2026-09-28T20:43:20Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "594611e9d8da4831fe9d4403b757b68c9c8e8e21",
+         "committedDate": "2026-09-28T20:53:08Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": [
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "copilot-pull-request-reviewer"
+           },
+           "createdAt": "2026-09-24T07:33:10Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4091050453"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "copilot-pull-request-reviewer"
+           },
+           "createdAt": "2026-09-24T07:33:11Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4091050514"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T03:00:57Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4118191654"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T19:54:42Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126426333"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T06:58:39Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4119376635"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T19:20:01Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126138207"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T07:07:57Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4119436464"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T20:15:42Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126610365"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T07:15:25Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4119487720"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T20:16:35Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126618258"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T07:18:34Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4119508558"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T20:02:07Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126492990"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "peterxcli"
+           },
+           "createdAt": "2026-09-28T07:27:15Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4119569515"
+          },
+          {
+           "author": {
+            "login": "taklwu"
+           },
+           "createdAt": "2026-09-28T20:42:39Z",
+           "url": "https://github.com/apache/ozone/pull/11314#discussion_r4126834319"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "timelineItems": {
+      "nodes": []
+     }
+    }
+   },
+   "pr4": {
+    "pullRequest": {
+     "number": 11325,
+     "title": "HDDS-16601. Rename more test helpers and parents for naming convention",
+     "url": "https://github.com/apache/ozone/pull/11325",
+     "state": "MERGED",
+     "isDraft": false,
+     "mergedAt": "2026-09-25T13:35:59Z",
+     "closedAt": "2026-09-25T13:35:59Z",
+     "updatedAt": "2026-09-25T13:36:10Z",
+     "author": {
+      "login": "adoroszlai"
+     },
+     "reviewDecision": "APPROVED",
+     "mergeable": "UNKNOWN",
+     "headRefOid": "157e519ad4b31dd9bbf3cf3acc230a655401d4f7",
+     "viewerLatestReview": {
+      "state": "APPROVED",
+      "submittedAt": "2026-09-25T13:27:28Z",
+      "commit": {
+       "oid": "157e519ad4b31dd9bbf3cf3acc230a655401d4f7"
+      }
+     },
+     "viewerLatestReviewRequest": null,
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "totalCount": 4,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "eb8ace68623fd1a7db9dbfbaebf3ca5f4926c4e2",
+         "committedDate": "2026-09-25T08:52:37Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "a83fe47f910356bfa393f142fdab3db8cd99deb1",
+         "committedDate": "2026-09-25T08:54:57Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "0046becf90116c6e3ea196567408bc6b45b435b5",
+         "committedDate": "2026-09-25T08:57:47Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "157e519ad4b31dd9bbf3cf3acc230a655401d4f7",
+         "committedDate": "2026-09-25T08:58:21Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": []
+     },
+     "timelineItems": {
+      "nodes": [
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-09-25T13:36:11Z",
+        "actor": {
+         "login": "peterxcli"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "pr5": {
+    "pullRequest": {
+     "number": 10765,
+     "title": "HDDS-15734. Implementing position read in BlockInputStream",
+     "url": "https://github.com/apache/ozone/pull/10765",
+     "state": "CLOSED",
+     "isDraft": false,
+     "mergedAt": null,
+     "closedAt": "2026-08-16T00:04:41Z",
+     "updatedAt": "2026-08-25T12:51:12Z",
+     "author": {
+      "login": "chungen0126"
+     },
+     "reviewDecision": null,
+     "mergeable": "CONFLICTING",
+     "headRefOid": "0c294de7864a048c533d88edadfb4e56e681c4de",
+     "viewerLatestReview": null,
+     "viewerLatestReviewRequest": {
+      "id": "RR_kwDODKiyxs7I8ew9"
+     },
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "ashishkumar50"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "jojochuang"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "adoroszlai"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "peterxcli"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "totalCount": 8,
+      "nodes": [
+       {
+        "commit": {
+         "oid": "9f551e841fe06846f93603631897b82db6c2e6ab",
+         "committedDate": "2026-07-13T20:16:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "a882c2335baf36f5d1faaff772952322d78e1830",
+         "committedDate": "2026-07-13T22:15:40Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "5e07fcdcdc875ec850c677cb47c3fccfaa3df61b",
+         "committedDate": "2026-07-14T15:04:13Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "a17f876e7ec7ec2e24b93b0b7e2fa0c2873b3e96",
+         "committedDate": "2026-07-15T11:35:31Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "4ef5a9286c57912d9d20d60c08c02dd1c0aa8d76",
+         "committedDate": "2026-07-15T16:53:53Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "c5ba62dc5c0c120a575bc62828a350966b186803",
+         "committedDate": "2026-07-16T11:57:14Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "ec3ee4c1054f67c27b30f4bbfa32d164074bbe32",
+         "committedDate": "2026-07-16T13:14:09Z"
+        }
+       },
+       {
+        "commit": {
+         "oid": "0c294de7864a048c533d88edadfb4e56e681c4de",
+         "committedDate": "2026-07-17T02:45:40Z"
+        }
+       }
+      ]
+     },
+     "lastCommit": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     },
+     "reviewThreads": {
+      "nodes": [
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T13:17:26Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3595744022"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-16T14:07:48Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596151743"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T13:18:47Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3595754497"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-16T14:16:11Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596215556"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T13:38:58Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3595929355"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-16T14:38:09Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596390024"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T14:05:24Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596132920"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-17T03:11:05Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3600128279"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T14:06:38Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596142723"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-17T03:12:59Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3600133619"
+          }
+         ]
+        }
+       },
+       {
+        "comments": {
+         "nodes": [
+          {
+           "author": {
+            "login": "yandrey321"
+           },
+           "createdAt": "2026-07-16T14:08:09Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3596154257"
+          },
+          {
+           "author": {
+            "login": "chungen0126"
+           },
+           "createdAt": "2026-07-17T03:09:22Z",
+           "url": "https://github.com/apache/ozone/pull/10765#discussion_r3600123810"
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "timelineItems": {
+      "nodes": [
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-07-15T04:02:00Z",
+        "actor": {
+         "login": "yandrey321"
+        }
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-08-25T12:51:14Z",
+        "actor": {
+         "login": "jojochuang"
+        }
+       },
+       {
+        "__typename": "MentionedEvent",
+        "createdAt": "2026-08-25T12:51:14Z",
+        "actor": {
+         "login": "yandrey321"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "pr6": {
+    "pullRequest": null
+   }
+  },
+  "errors": [
+   {
+    "type": "NOT_FOUND",
+    "path": [
+     "pr6",
+     "pullRequest"
+    ],
+    "locations": [
+     {
+      "line": 21,
+      "column": 5
+     }
+    ],
+    "message": "Could not resolve to a PullRequest with the number of 99999999."
+   }
+  ]
+ }
+}

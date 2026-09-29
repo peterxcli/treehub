@@ -20,13 +20,32 @@
       <a class="treehub-settings">
         <span class="tooltipped tooltipped-s" aria-label="Settings"> <i class="treehub-icon-settings"></i> </span>
       </a>
+
+      <a class="treehub-home" role="button">
+        <span class="tooltipped tooltipped-s" aria-label="Review queue and bookmarks"><i data-octicon="home"></i></span>
+      </a>
     </div>
 
     <div class="treehub-sub-icons">
       <a class="treehub-pr-nav-toggle">
         <span class="tooltipped tooltipped-s" aria-label="Pull requests"><i data-octicon="pullRequest"></i></span>
       </a>
+
+      <a class="treehub-hub-toggle treehub-queue-toggle" role="button" aria-pressed="false">
+        <span class="tooltipped tooltipped-s" aria-label="Add to your review queue"
+          ><i data-octicon="codeReview"></i
+        ></span>
+      </a>
+
+      <a class="treehub-hub-toggle treehub-bookmark-toggle" role="button" aria-pressed="false">
+        <span class="tooltipped tooltipped-s" aria-label="Bookmark this repository"
+          ><span class="treehub-when-off"><i data-octicon="bookmark"></i></span
+          ><span class="treehub-when-on"><i data-octicon="bookmarkFill"></i></span
+        ></span>
+      </a>
     </div>
+
+    <div class="treehub-hub-flash" role="status" aria-live="polite"></div>
 
     <div class="treehub-pr-nav" role="dialog" aria-label="Pull requests">
       <div class="treehub-pr-nav-header">
@@ -55,6 +74,26 @@
       <div class="treehub-view treehub-settings-view">
         <div class="treehub-view-header treehub-header-text-top">Settings</div>
         <form class="treehub-view-body">
+          <div class="treehub-account">
+            <label>TreeHub account</label>
+            <div class="treehub-account-out">
+              <button type="button" class="btn btn-sm treehub-sign-in"
+                ><i data-octicon="markGithub"></i> <span>Sign in with GitHub</span></button
+              >
+              <div class="treehub-disclaimer text-gray">
+                Bookmark repositories and keep a review queue of pull requests, synced across your browsers.
+              </div>
+            </div>
+            <div class="treehub-account-in">
+              <img class="treehub-account-avatar" alt="" width="20" height="20" />
+              <strong class="treehub-account-login"></strong>
+              <span class="treehub-account-actions">
+                <a class="treehub-open-dashboard" role="button">Dashboard</a>
+                <a class="treehub-sign-out" role="button">Sign out</a>
+              </span>
+            </div>
+          </div>
+
           <div>
             <label>GitHub access token</label>
             <div class="treehub-token-actions">
@@ -83,7 +122,8 @@
               spellcheck="false"
             />
             <div class="treehub-disclaimer text-gray">
-              Stored only in this browser and sent only to GitHub. Commenting needs the repo scope.
+              Not needed when signed in. Stored only in this browser and sent only to GitHub. Commenting needs
+              the repo scope.
             </div>
           </div>
 

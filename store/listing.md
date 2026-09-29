@@ -10,7 +10,7 @@ Upload `dist/chrome.zip` (built with `npm run dist`).
 
 **Name** (from the manifest): TreeHub
 
-**Summary** (from the manifest): Code tree for GitHub with pull request review tools: changed files, review threads, full-file diffs and PR navigation.
+**Summary** (from the manifest): Code tree for GitHub with pull request review tools, repository bookmarks and a review queue.
 
 **Category**: Developer Tools
 
@@ -41,8 +41,21 @@ VIEW FULL FILE
 PULL REQUEST NAVIGATION
 • The repository's open pull requests, with filters: awaiting your review, reviewed by you, no reviews, changes requested, review required, approved
 
+REVIEW QUEUE
+• One click on a pull request adds it to your review queue; the icon turns bold while it is queued
+• For each queued pull request, TreeHub shows what concerns you, each as its own status: review requested, new commits since your review, replies to your review comments and who wrote them, when you were last mentioned, updates since you last looked, your review and the review decision, checks, merge conflicts, draft, ready for review, merged, closed
+• Refreshed every 15 minutes; the toolbar icon counts the pull requests that need your attention
+
+BOOKMARKS
+• One click bookmarks the current repository; the icon turns bold once bookmarked
+• Your bookmarks with their description, language, stars, open pull requests and issues
+
+DASHBOARD
+• The extension's own page lists your review queue, with filters by status and sorting, and your bookmarks
+• Sign in with GitHub: your bookmarks and queue follow you across browsers
+
 PRIVACY
-TreeHub has no servers and collects nothing. It works on public repositories without any setup. To browse private repositories, see viewed and resolved states everywhere and add comments, enter a GitHub personal access token in TreeHub's settings: it stays in your browser and is sent only to GitHub.
+The code tree and review tools work on public repositories without any setup or account, and talk only to GitHub. Bookmarks and the review queue need you to sign in with GitHub: the TreeHub server then keeps your GitHub handle, your bookmarks and your queued pull requests. Your GitHub token stays in your browser, statuses are computed there, and you can delete your account from the dashboard. Details: https://github.com/peterxcli/treehub/blob/main/PRIVACY.md
 
 TreeHub is open source under the AGPL-3.0: https://github.com/peterxcli/treehub
 Based on the open-source edition of Octotree. Not affiliated with or endorsed by Octotree or GitHub.
@@ -63,7 +76,7 @@ Based on the open-source edition of Octotree. Not affiliated with or endorsed by
 **Single purpose description**:
 
 ```text
-TreeHub adds a code tree and pull request review tools (changed files, review conversations, full-file diffs and pull request navigation) to GitHub pages.
+TreeHub helps developers navigate and review code on GitHub: a code tree and pull request review tools (changed files, review conversations, full-file diffs, pull request navigation) on GitHub pages, plus repository bookmarks and a review queue that tracks what changed on the pull requests the user follows.
 ```
 
 **Permission justifications**:
@@ -71,7 +84,19 @@ TreeHub adds a code tree and pull request review tools (changed files, review co
 - `storage`:
 
   ```text
-  Saves the user's settings (sidebar width, docking side, pinning, hotkeys, pull request filter) and the optional GitHub access token locally in the browser.
+  Saves the user's settings (sidebar width, docking side, pinning, hotkeys, pull request filter), the optional GitHub access token, the sign-in session, and a local copy of the user's bookmarks and review queue with the computed statuses, so that GitHub pages and the dashboard show them without waiting.
+  ```
+
+- `identity`:
+
+  ```text
+  Runs "Sign in with GitHub" with chrome.identity.launchWebAuthFlow: the GitHub OAuth authorization page opens in a window, and the result comes back to the extension through its chromiumapp.org redirect URL. Sign-in is optional and only needed for bookmarks and the review queue.
+  ```
+
+- `alarms`:
+
+  ```text
+  Refreshes the statuses of the pull requests in the user's review queue every 15 minutes, so the count of pull requests that need attention on the toolbar icon stays current.
   ```
 
 - Host permission (content script on `https://github.com/*`):
@@ -84,8 +109,10 @@ TreeHub adds a code tree and pull request review tools (changed files, review co
 
 **Data usage**, check:
 
-- **Authentication information**: the optional GitHub personal access token, stored locally and sent only to GitHub's API.
-- **Website content**: review comments the user writes are sent to GitHub when the user adds them. Page content is only read locally.
+- **Personally identifiable information**: when the user signs in, the TreeHub server stores their GitHub handle, user ID, name and avatar URL from their GitHub profile.
+- **Authentication information**: the GitHub token (from signing in, or a personal access token) stored locally and sent only to GitHub's API; the TreeHub session token stored locally and sent only to the TreeHub server.
+- **Web history**: for pull requests in the user's review queue only, the time the user last opened them on github.com, stored by the TreeHub server.
+- **Website content**: the names of bookmarked repositories and the repository, number and title of queued pull requests, stored by the TreeHub server; review comments the user writes are sent to GitHub when the user adds them. Other page content is only read locally.
 
 Then check all three certifications (not sold to third parties, not used for unrelated purposes, not used for creditworthiness).
 
@@ -100,11 +127,14 @@ Then check all three certifications (not sold to third parties, not used for unr
 ## Test instructions (optional field for reviewers)
 
 ```text
-No account or setup is needed.
+Steps 1-5 need no account or setup.
 1. Open https://github.com/apache/ozone/pull/11302/files and move the mouse over the "TreeHub" tab on the left edge of the page (or press Ctrl+Shift+S) to show the sidebar. Click the pin icon to keep it open.
 2. The tree lists the files changed by the pull request, with additions/deletions. Click the speech-bubble counts to show review conversations; click a file or conversation to jump to it.
 3. Click "View full" in the header of any diff to see the whole file with its changes.
 4. Click the pull request icon in the sidebar header (second row) to list open pull requests and try the filters.
 5. Click the sidebar icon in the sidebar footer to dock the sidebar on the right.
-Filters marked "…you", viewed/resolved states on other pages and commenting require a GitHub personal access token entered in the settings (gear icon).
+Bookmarks and the review queue need a GitHub account (any account works):
+6. Click the TreeHub toolbar icon to open the dashboard and click "Sign in with GitHub".
+7. Back on the pull request, click the review icon in the sidebar header (second row) to add it to the review queue, and the bookmark icon to bookmark the repository. Both turn bold.
+8. The dashboard lists the queued pull request with its statuses, and the bookmark. The account menu has "Delete account".
 ```

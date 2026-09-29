@@ -3,8 +3,11 @@
  * Builds the extension into ./tmp/<browser> (and ./dist/*.zip with --dist).
  *
  *   node scripts/build.js           build once
- *   node scripts/build.js --watch   rebuild on changes in src/ and libs/
+ *   node scripts/build.js --watch   rebuild on changes in src/, libs/ and app/
  *   node scripts/build.js --dist    build and zip each browser folder into dist/
+ *
+ * The content script is a concatenation of libs/ and src/. The dashboard and the background worker (app/) are
+ * built by Vite, which reads VITE_TREEHUB_API and VITE_TREEHUB_DEV_LOGIN from the environment (app/src/config.ts).
  *
  * Replaces the old gulp 3 pipeline, which no longer runs on current Node versions.
  */
@@ -16,6 +19,7 @@ const less = require('less');
 const ROOT = path.resolve(__dirname, '..');
 const TMP = path.join(ROOT, 'tmp');
 const DIST = path.join(ROOT, 'dist');
+const APP_OUT = path.join(TMP, 'app'); // outDir of app/vite.config.mts
 
 const LIB_FILES = [
   'libs/file-icons.js',
@@ -47,6 +51,7 @@ const SRC_FILES = [
   'src/view.options.js',
   'src/view.pr-nav.js',
   'src/view.full-file.js',
+  'src/view.hub.js',
   'src/main.js'
 ];
 
@@ -93,9 +98,19 @@ async function buildCss(urlPrefix) {
   return [fileIcons, jstree, css].join('\n');
 }
 
-function buildManifest() {
+function buildManifest(browser) {
   const {version} = JSON.parse(read('package.json'));
-  return read('src/config/wex/manifest.json').replace('$VERSION', version);
+  const manifest = JSON.parse(read('src/config/wex/manifest.json').replace('$VERSION', version));
+  if (browser === 'firefox') {
+    // Firefox runs background scripts instead of service workers
+    manifest.background = {scripts: [manifest.background.service_worker], type: manifest.background.type};
+  }
+  return JSON.stringify(manifest, null, 2) + '\n';
+}
+
+async function buildApp() {
+  const {build: viteBuild} = await import('vite');
+  await viteBuild({configFile: path.join(ROOT, 'app/vite.config.mts'), logLevel: 'warn'});
 }
 
 function copyDir(src, dest) {
@@ -113,7 +128,7 @@ async function build() {
   fs.rmSync(TMP, {recursive: true, force: true});
 
   const js = buildJs();
-  const manifest = buildManifest();
+  await buildApp();
 
   for (const [browser, urlPrefix] of Object.entries(BROWSERS)) {
     const out = path.join(TMP, browser);
@@ -121,10 +136,12 @@ async function build() {
     copyDir(path.join(ROOT, 'icons'), path.join(out, 'icons'));
     copyDir(path.join(ROOT, 'libs/fonts'), path.join(out, 'fonts'));
     copyDir(path.join(ROOT, 'libs/images'), path.join(out, 'images'));
+    copyDir(APP_OUT, out);
     fs.writeFileSync(path.join(out, 'content.js'), js);
     fs.writeFileSync(path.join(out, 'content.css'), await buildCss(urlPrefix));
-    fs.writeFileSync(path.join(out, 'manifest.json'), manifest);
+    fs.writeFileSync(path.join(out, 'manifest.json'), buildManifest(browser));
   }
+  fs.rmSync(APP_OUT, {recursive: true, force: true});
 
   console.log(`[build] done in ${Date.now() - started}ms -> ${path.relative(ROOT, TMP)}/{${Object.keys(BROWSERS)}}`);
 }
@@ -145,10 +162,10 @@ function watch() {
     clearTimeout(timer);
     timer = setTimeout(() => build().catch((err) => console.error('[build] failed:', err.message)), 100);
   };
-  for (const dir of ['src', 'libs']) {
+  for (const dir of ['src', 'libs', 'app']) {
     fs.watch(path.join(ROOT, dir), {recursive: true}, rebuild);
   }
-  console.log('[watch] watching src/ and libs/ for changes');
+  console.log('[watch] watching src/, libs/ and app/ for changes');
 }
 
 (async () => {
