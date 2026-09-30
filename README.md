@@ -2,20 +2,75 @@
 
 Browser extension that adds an IDE-like code tree, pull request review tools, repository bookmarks and a pull request review queue to GitHub.
 
-![TreeHub showing the changes and review conversations of a pull request](store/screenshot-1.png)
+<img src="docs/screenshots/overview.png" width="1280" alt="TreeHub's sidebar next to a pull request: the files it changes, with their additions and deletions, and its review conversations">
 
 ## Features
 
-- **Code tree**: browse repositories as a tree with file-type icons. Huge repositories are lazy-loaded.
-- **Pull request changes**: only the files a pull request (or commit) changes, with additions and deletions per file and folder, the files you marked as viewed, and the review conversations with their author, replies and resolved/outdated state. Click a file or a conversation to jump to it.
-- **View full file**: a "View full" button on each pull request diff shows the entire file with its changes, syntax highlighting and conversations. Click line numbers to select lines (Shift+click or drag for a range), then comment on them or copy their permalink. The comment box works like GitHub's: a Markdown toolbar and shortcuts, suggested changes, and a Preview tab rendered by GitHub, where permalinks to lines of the repository show as code snippets (also in conversations). GitHub only accepts line comments on lines of the diff, within one hunk for several lines, so comments on other lines are posted as file comments linking to them.
-- **Pull request navigation**: the open pull requests of the repository, with review filters (awaiting your review, reviewed by you, no reviews, changes requested, review required, approved).
-- **Sidebar**: pin, resize and dock it on the left or right. Follows GitHub's light and dark themes.
-- **Bookmarks**: click the bookmark icon in the sidebar to bookmark the current repository. It turns bold once bookmarked; click it again to remove the bookmark.
-- **Review queue**: on a pull request, click the review icon in the sidebar to follow it (bold when queued). TreeHub then tracks, for you, independent statuses of each queued pull request: review requested, new commits since your review, replies to your review comments (and who replied), when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged and closed. Queued pull requests are refreshed every 15 minutes, and the toolbar icon counts those that need your attention.
-- **Credential problems explained**: when GitHub refuses TreeHub's token (expired or revoked, missing scope, no access to the repository, organization single sign-on or app restrictions, rate limit), a popup says why, with the token, its scopes and when GitHub last accepted it, and how to fix it. An expired TreeHub sign-in shows its expiry date.
-- **History**: while you are signed in, TreeHub remembers the repositories and pull requests you open, most recent first. Each entry is kept 30 days after your last visit by default (1 to 365 days); pause the recording, remove entries or clear the history in the dashboard.
-- **Dashboard**: the extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, your bookmarks and your history. If you get signed out without asking (e.g. the sign-in expired), the sidebar says so and the toolbar icon shows an orange "!".
+### Code tree
+
+Browse repositories as a tree with file-type icons. Huge repositories are lazy-loaded.
+
+<img src="docs/screenshots/code-tree.png" width="1000" alt="The code tree of a repository in the sidebar">
+
+### Pull request changes
+
+Only the files a pull request (or commit) changes, with additions and deletions per file and folder, the files you marked as viewed, and the review conversations with their author, replies and resolved/outdated state. Click a file or a conversation to jump to it.
+
+<img src="docs/screenshots/pull-request-changes.png" width="520" alt="The files changed by a pull request, with their additions and deletions, viewed files and a review conversation">
+
+### View full file
+
+A "View full" button on each pull request diff shows the entire file with its changes, syntax highlighting and conversations. Click line numbers to select lines (Shift+click or drag for a range), then comment on them or copy their permalink.
+
+<img src="docs/screenshots/view-full.png" width="1232" alt="The View full dialog: the entire file with its changes, two lines selected with Comment and Copy permalink">
+
+The comment box works like GitHub's: a Markdown toolbar and shortcuts, suggested changes, and a Preview tab rendered by GitHub, where permalinks to lines of the repository show as code snippets (also in conversations). GitHub only accepts line comments on lines of the diff, within one hunk for several lines, so comments on other lines are posted as file comments linking to them.
+
+<img src="docs/screenshots/comment-write.png" width="832" alt="The comment box: Write and Preview tabs, a Markdown toolbar and a comment with a permalink and a suggestion">
+
+<img src="docs/screenshots/comment-preview.png" width="896" alt="The preview of the comment: the permalink as a code snippet and the suggested change">
+
+### Pull request navigation
+
+The open pull requests of the repository, with review filters (awaiting your review, reviewed by you, no reviews, changes requested, review required, approved).
+
+<img src="docs/screenshots/pull-request-list.png" width="720" alt="The repository's open pull requests, with the review filters">
+
+### Sidebar
+
+Pin, resize and dock it on the left or right. Follows GitHub's light and dark themes.
+
+<img src="docs/screenshots/sidebar-dark.png" width="760" alt="The sidebar docked on the right, in GitHub's dark theme">
+
+### Bookmarks
+
+Click the bookmark icon in the sidebar to bookmark the current repository. It turns bold once bookmarked; click it again to remove the bookmark. The dashboard lists them.
+
+<img src="docs/screenshots/bookmarks.png" width="1100" alt="The bookmarks in the dashboard">
+
+### Review queue
+
+On a pull request, click the review icon in the sidebar to follow it (bold when queued). TreeHub then tracks, for you, independent statuses of each queued pull request: review requested, new commits since your review, replies to your review comments (and who replied), when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged and closed. Queued pull requests are refreshed every 15 minutes, and the toolbar icon counts those that need your attention.
+
+<img src="docs/screenshots/review-queue.png" width="1100" alt="The review queue in the dashboard: filters by status and the statuses of each pull request">
+
+### Credential problems explained
+
+When GitHub refuses TreeHub's token (expired or revoked, missing scope, no access to the repository, organization single sign-on or app restrictions, rate limit), a popup says why, with the token, its scopes and when GitHub last accepted it, and how to fix it. An expired TreeHub sign-in shows its expiry date.
+
+<img src="docs/screenshots/credential-problem.png" width="900" alt="A popup explaining that GitHub doesn't accept the token anymore, with the request, the token and how to fix it">
+
+### History
+
+While you are signed in, TreeHub remembers the repositories and pull requests you open, most recent first. Each entry is kept 30 days after your last visit by default (1 to 365 days); pause the recording, remove entries or clear the history in the dashboard.
+
+<img src="docs/screenshots/history.png" width="1100" alt="The history in the dashboard: repositories and pull requests, most recent first">
+
+### Dashboard
+
+The extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, your bookmarks and your history. If you get signed out without asking (e.g. the sign-in expired), the sidebar says so and the toolbar icon shows an orange "!".
+
+<img src="docs/screenshots/signed-out.png" width="760" alt="The sidebar saying that TreeHub signed you out, with Sign in again">
 
 Bookmarks, the review queue and the history need you to sign in with GitHub (dashboard, or the sidebar settings). They are kept by the TreeHub server ([`server/`](server)), so they follow you across browsers.
 
