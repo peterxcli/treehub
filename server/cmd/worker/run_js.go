@@ -17,8 +17,11 @@ import (
 	"github.com/peterxcli/treehub/server/internal/db"
 )
 
-// A fresh Go instance is started for every event (see worker-shim/worker.mjs),
-// so everything below is per-request setup and must stay cheap.
+// One Go instance serves the requests of an isolate until its memory has grown
+// (see worker-shim/worker.mjs): the setup below runs once per instance, and the
+// program then serves requests until it is replaced or the isolate goes away.
+// (workers.Serve would end it after the first response.) The handlers must not
+// keep state between requests.
 func run() {
 	h, err := newHandler()
 	if err != nil {
@@ -27,7 +30,9 @@ func run() {
 		log.Printf("worker setup: %v", err)
 		h = api.Unavailable(err.Error())
 	}
-	workers.Serve(h)
+	workers.ServeNonBlock(h)
+	workers.Ready()
+	select {}
 }
 
 func newHandler() (http.Handler, error) {

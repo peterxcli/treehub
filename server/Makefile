@@ -22,7 +22,9 @@ worker: $(WASM_OUT)
 $(WASM_OUT): $(shell find cmd/worker internal gen/go -name '*.go' 2>/dev/null) go.mod go.sum $(SHIM)
 	mkdir -p build
 	cp $(SHIM) build/
-	tinygo build -o $(WASM_OUT) -target wasm -no-debug ./cmd/worker
+	# No garbage collection: worker-shim/worker.mjs replaces the program once its memory has grown (TinyGo's
+	# collector costs more CPU time, which the Workers free plan limits to 10ms per request)
+	tinygo build -o $(WASM_OUT) -target wasm -no-debug -gc=leaking ./cmd/worker
 	@ls -la $(WASM_OUT) && gzip -9 -c $(WASM_OUT) | wc -c | xargs -I{} echo "gzipped: {} bytes (free plan limit 3MB)"
 
 dev: worker        ## local dev server on :8787 (D1 emulated)
