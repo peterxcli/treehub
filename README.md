@@ -16,7 +16,7 @@ Browse repositories as a tree with file-type icons. Huge repositories are lazy-l
 
 Only the files a pull request (or commit) changes, with additions and deletions per file and folder, the files you marked as viewed, and the review conversations with their author, replies and resolved/outdated state. Click a file or a conversation to jump to it.
 
-<img src="docs/screenshots/pull-request-changes.png" width="520" alt="The files changed by a pull request, with their additions and deletions, viewed files and a review conversation">
+<img src="docs/screenshots/pull-request-changes.png" width="540" alt="The files changed by a pull request, with their additions and deletions, viewed files and a review conversation">
 
 ### View full file
 
