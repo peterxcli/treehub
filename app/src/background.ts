@@ -24,9 +24,7 @@ async function refreshAll(): Promise<void> {
 /** Focuses the dashboard if it is open, else opens it. */
 async function openDashboard(view?: string): Promise<void> {
   const url = view ? `${DASHBOARD}#${view}` : DASHBOARD;
-  const contexts = chrome.runtime.getContexts
-    ? await chrome.runtime.getContexts({contextTypes: [chrome.runtime.ContextType.TAB]})
-    : [];
+  const contexts = await chrome.runtime.getContexts({contextTypes: [chrome.runtime.ContextType.TAB]});
   const open = contexts.find((context) => context.documentUrl && context.documentUrl.split('#')[0] === DASHBOARD);
   if (open && open.tabId >= 0) {
     await chrome.tabs.update(open.tabId, view ? {active: true, url} : {active: true});

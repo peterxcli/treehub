@@ -405,7 +405,7 @@ export async function updateBadge(): Promise<void> {
       return !!state && needsAttention(state);
     }).length;
   }
-  if (chrome.action.setBadgeTextColor) await chrome.action.setBadgeTextColor({color: '#ffffff'});
+  await chrome.action.setBadgeTextColor({color: '#ffffff'});
   // GitHub refusing the credentials comes first: statuses can't be trusted
   const problem = auth && statuses && statuses.login === auth.account.login ? statuses.problem : undefined;
   if (problem) {

@@ -1,11 +1,4 @@
-// When Github page loads at repo path e.g. https://github.com/jquery/jquery, the HTML tree has
-// <main id="js-repo-pjax-container"> to contain server-rendered HTML in response of pjax.
-// However, that <main> element doesn't have "id" attribute if the Github page loads at specific
-// File e.g. https://github.com/jquery/jquery/blob/master/.editorconfig.
-// Therefore, the below selector uses many path but only points to the same <main> element
-const GH_PJAX_CONTAINER_SEL =
-  '#js-repo-pjax-container, div[itemtype="http://schema.org/SoftwareSourceCode"] main, [data-pjax-container]';
-
+const GH_API = 'https://api.github.com';
 const GH_MAX_HUGE_REPOS_SIZE = 50;
 
 // The API returns at most 3000 files for a pull request or a commit
@@ -56,33 +49,15 @@ const GH_ADD_REVIEW_THREAD_MUTATION = `
     }
   }`;
 
-class GitHub extends PjaxAdapter {
+class GitHub extends Adapter {
   constructor() {
-    super(GH_PJAX_CONTAINER_SEL);
+    super();
     this._cache = {};
   }
 
   // @override
   init($sidebar, dock) {
     super.init($sidebar, dock);
-
-    // Fix #151 by detecting when page layout is updated.
-    // In this case, split-diff page has a wider layout, so need to recompute margin.
-    // Note that couldn't do this in response to URL change, since new DOM via pjax might not be ready.
-    const diffModeObserver = new window.MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (~mutation.oldValue.indexOf('split-diff') || ~mutation.target.className.indexOf('split-diff')) {
-          return $(document).trigger(EVENT.LAYOUT_CHANGE);
-        }
-      });
-    });
-
-    diffModeObserver.observe(document.body, {
-      attributes: true,
-      attributeFilter: ['class'],
-      attributeOldValue: true
-    });
-
     this._observeViewedToggles();
   }
 
@@ -116,10 +91,7 @@ class GitHub extends PjaxAdapter {
 
   // @override
   getCreateTokenUrl() {
-    return (
-      `${location.protocol}//${location.host}/settings/tokens/new?` +
-      'scopes=repo&description=TreeHub%20browser%20extension'
-    );
+    return 'https://github.com/settings/tokens/new?scopes=repo&description=TreeHub%20browser%20extension';
   }
 
   // @override
@@ -169,48 +141,16 @@ class GitHub extends PjaxAdapter {
       }
     }
 
-    // Get branch by inspecting URL or DOM, quite fragile so provide multiple fallbacks.
-    // TODO would be great if there's a more robust way to do this
-    /**
-     * Github renders the branch name in one of below structure depending on the length
-     * of branch name. We're using this for default code page or tree/blob.
-     *
-     * Option 1: when the length is short enough
-     * <summary title="Switch branches or tags">
-     *   <span class="css-truncate-target">feature/1/2/3</span>
-     * </summary>
-     *
-     * Option 2: when the length is too long
-     * <summary title="feature/1/2/3/4/5/6/7/8">
-     *   <span class="css-truncate-target">feature/1/2/3...</span>
-     * </summary>
-     */
-    const branchDropdownMenuSummary = $('.branch-select-menu summary');
-    const branchNameInTitle = branchDropdownMenuSummary.attr('title');
-    const branchNameInSpan = branchDropdownMenuSummary.find('span').text();
-    const branchFromSummary =
-      branchNameInTitle && branchNameInTitle.toLowerCase().startsWith('switch branches')
-        ? branchNameInSpan
-        : branchNameInTitle;
-
     const branch =
-      // Use the commit ID when showing a particular commit
+      // The commit shown
       (isCommit && typeId) ||
-      // Use 'master' when viewing repo's releases or tags
-      ((type === 'releases' || type === 'tags') && 'master') ||
-      // Use target branch in a PR page
+      // The target branch of a pull request
       (pullRefs && pullRefs.base) ||
-      // Get commit ID or branch name from the DOM
-      branchFromSummary ||
-      ($('.overall-summary .numbers-summary .commits a').attr('href') || '').replace(
-        `/${username}/${reponame}/commits/`,
-        ''
-      ) ||
-      // The above should work for tree|blob, but if DOM changes, fallback to use ID from URL
+      // The branch (or commit) of tree and blob URLs
       ((type === 'tree' || type === 'blob') && typeId) ||
-      // Reuse last selected branch if exist
+      // The branch shown last in this repository
       (currentRepo.username === username && currentRepo.reponame === reponame && currentRepo.branch) ||
-      // Get default branch from cache
+      // The default branch, when known (else it is requested below)
       this._defaultBranch[username + '/' + reponame];
 
     const showChanges = await extStore.get(STORE.PR);
@@ -319,7 +259,7 @@ class GitHub extends PjaxAdapter {
       return;
     }
 
-    // Pjax loses the anchor, let GitHub load the diff page and scroll to it
+    // Another page: GitHub loads it and scrolls to the anchor
     if (anchor) return this.navigate(path);
 
     super.selectFile(path);
@@ -645,7 +585,7 @@ class GitHub extends PjaxAdapter {
   async searchPullRequests(repo, token, qualifiers, page = 1) {
     const perPage = 30;
     const query = `repo:${repo.username}/${repo.reponame} is:pr is:open ${qualifiers}`.trim();
-    const url = `${this._getApiHost()}/search/issues?q=${encodeURIComponent(query)}` +
+    const url = `${GH_API}/search/issues?q=${encodeURIComponent(query)}` +
       `&sort=created&order=desc&per_page=${perPage}&page=${page}`;
     const {data} = await this._api(url, {repo, token});
     return {items: data.items, hasMore: page * perPage < Math.min(data.total_count, 1000)};
@@ -935,15 +875,6 @@ class GitHub extends PjaxAdapter {
     return promise;
   }
 
-  _getApiHost() {
-    return location.protocol + '//' + (location.host === 'github.com' ? 'api.github.com' : location.host + '/api/v3');
-  }
-
-  _getGraphqlUrl() {
-    return location.host === 'github.com'
-      ? `${location.protocol}//api.github.com/graphql`
-      : `${location.protocol}//${location.host}/api/graphql`;
-  }
 
   _getNextPageUrl(jqXHR) {
     const match = (jqXHR.getResponseHeader('Link') || '').match(/<([^>]+)>;\s*rel="next"/);
@@ -960,7 +891,7 @@ class GitHub extends PjaxAdapter {
   _api(path, opts, {method = 'GET', data, accept, dataType} = {}) {
     const url = path.startsWith('http')
       ? path
-      : `${this._getApiHost()}/repos/${opts.repo.username}/${opts.repo.reponame}${path}`;
+      : `${GH_API}/repos/${opts.repo.username}/${opts.repo.reponame}${path}`;
     const cfg = {url, method, cache: false, headers: {}};
 
     if (opts.token) cfg.headers.Authorization = 'token ' + opts.token;
@@ -1000,7 +931,7 @@ class GitHub extends PjaxAdapter {
   }
 
   async _graphql(query, variables, opts) {
-    const {data} = await this._api(this._getGraphqlUrl(), opts, {method: 'POST', data: {query, variables}});
+    const {data} = await this._api(`${GH_API}/graphql`, opts, {method: 'POST', data: {query, variables}});
     if (data.errors && data.errors.length) {
       throw {error: 'Error: GraphQL', message: data.errors[0].message, apiMessage: data.errors[0].message};
     }
@@ -1049,7 +980,7 @@ class GitHub extends PjaxAdapter {
     if (path && path.startsWith('http')) {
       url = path;
     } else {
-      url = `${this._getApiHost()}/repos/${opts.repo.username}/${opts.repo.reponame}${path || ''}`;
+      url = `${GH_API}/repos/${opts.repo.username}/${opts.repo.reponame}${path || ''}`;
     }
 
     const cfg = {url, method: 'GET', cache: false};

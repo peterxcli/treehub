@@ -1,48 +1,27 @@
+/**
+ * Settings and state of TreeHub in chrome.storage.local. Changes of "treehub.*" keys, from any page or the
+ * background worker, trigger EVENT.STORE_CHANGE on this object with {key: [oldValue, newValue]}.
+ */
 class ExtStore {
   constructor(values, defaults) {
-    this._isSafari = isSafari();
     this._tempChanges = {};
 
-    if (!this._isSafari) {
-      this._setInExtensionStorage = promisify(chrome.storage.local, 'set');
-      this._getInExtensionStorage = promisify(chrome.storage.local, 'get');
-      this._removeInExtensionStorage = promisify(chrome.storage.local, 'remove');
-    }
-
-    // Initialize default values
+    // Default values of the settings
     this._init = Promise.all(
       Object.keys(values).map(async (key) => {
-        const existingVal = await this._innerGet(values[key]);
-        if (existingVal == null) {
+        if ((await this._innerGet(values[key])) == null) {
           await this._innerSet(values[key], defaults[key]);
         }
       })
     ).then(() => {
       this._init = null;
-      this._setupOnChangeEvent();
-    });
-  }
-
-  _setupOnChangeEvent() {
-    window.addEventListener('storage', (evt) => {
-      if (this._isTreeHubKey(evt.key)) {
-        this._notifyChange(evt.key, evt.oldValue, evt.newValue);
-      }
-    });
-
-    if (!this._isSafari) {
-      chrome.storage.onChanged.addListener((changes) => {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area !== 'local') return;
         Object.entries(changes).forEach(([key, change]) => {
-          if (this._isTreeHubKey(key)) {
-            this._notifyChange(key, change.oldValue, change.newValue);
-          }
+          if (key.startsWith('treehub')) this._notifyChange(key, change.oldValue, change.newValue);
         });
       });
-    }
-  }
-
-  _isTreeHubKey(key) {
-    return key.startsWith('treehub');
+    });
   }
 
   // Debounce and group the trigger of EVENT.STORE_CHANGE because the
@@ -73,103 +52,17 @@ class ExtStore {
   async remove(key) {
     if (!isExtensionContextValid()) return whenExtensionContextLost();
     if (this._init) await this._init;
-    return this._innerRemove(key);
-  }
-
-  async setIfNull(key, val) {
-    const existingVal = await this.get(key);
-    if (existingVal == null) {
-      await this.set(key, val);
-    }
+    return chrome.storage.local.remove(key);
   }
 
   // Private
-  async _innerGet (key) {
-    const result = (key.endsWith('local') || this._isSafari)
-      ? await this._getLocal(key)
-      : await this._getInExtensionStorage(key);
-
-    return result[key];
+  async _innerGet(key) {
+    return (await chrome.storage.local.get(key))[key];
   }
 
-  _innerSet (key, value) {
-    const payload = {[key]: value};
-    return (key.endsWith('local') || this._isSafari)
-      ? this._setLocal(payload)
-      : this._setInExtensionStorage(payload);
-  }
-
-  _innerRemove (key) {
-    return (key.endsWith('local') || this._isSafari)
-      ? this._removeLocal(key)
-      : this._removeInExtensionStorage(key);
-  }
-
-  _getLocal (key) {
-    return new Promise((resolve) => {
-      const value = parse(localStorage.getItem(key));
-      resolve({[key]: value});
-    });
-
-    function parse(val) {
-      try {
-        return JSON.parse(val);
-      } catch (e) {
-        return val;
-      }
-    }
-  }
-
-  _setLocal (obj) {
-    return new Promise(async (resolve) => {
-      const entries = Object.entries(obj);
-
-      if (entries.length > 0) {
-        const [key, newValue] = entries[0];
-        try {
-          const value = JSON.stringify(newValue);
-          if (!this._init) {
-            // Need to notify the changes programmatically since window.onstorage event only
-            // get triggerred if the changes are from other tabs
-            const oldValue = (await this._getLocal(key))[key];
-            this._notifyChange(key, oldValue, newValue);
-          }
-          localStorage.setItem(key, value);
-        } catch (e) {
-          const msg =
-            'TreeHub cannot save its settings. ' +
-            'If the local storage for this domain is full, please clean it up and try again.';
-          console.error(msg, e);
-        }
-        resolve();
-      }
-    });
-  }
-
-  _removeLocal (key) {
-    return new Promise((resolve) => {
-      localStorage.removeItem(key);
-      resolve();
-    });
+  _innerSet(key, value) {
+    return chrome.storage.local.set({[key]: value});
   }
 }
 
-function promisify(fn, method) {
-  if (typeof fn[method] !== 'function') {
-    throw new Error(`promisify: fn does not have ${method} method`);
-  }
-
-  return function(...args) {
-    return new Promise(function(resolve, reject) {
-      fn[method](...args, function(res) {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(res);
-        }
-      });
-    });
-  };
-}
-
-window.extStore = new ExtStore(STORE, DEFAULTS)
+window.extStore = new ExtStore(STORE, DEFAULTS);

@@ -408,7 +408,7 @@ class FullFileView {
     const {from, to} = this._selectedRange();
     const $label = $button.find('span');
     try {
-      await copyText(await this._permalink(describeRowRange(this._rows, from, to)));
+      await navigator.clipboard.writeText(await this._permalink(describeRowRange(this._rows, from, to)));
       $label.text('Copied!');
     } catch (err) {
       $label.text('Cannot copy');
@@ -628,24 +628,4 @@ function loadHighlighter() {
     } catch (ignored) {}
   }
   return window.hljs || null;
-}
-
-/**
- * Copies text to the clipboard.
- * @return {!Promise}
- */
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (err) {
-    // The Clipboard API can refuse, e.g. when the page lost the focus meanwhile
-    const textarea = $('<textarea readonly></textarea>')
-      .val(text)
-      .css({position: 'fixed', top: 0, left: 0, opacity: 0})
-      .appendTo(document.body)[0];
-    textarea.select();
-    const copied = document.execCommand('copy');
-    textarea.remove();
-    if (!copied) throw err;
-  }
 }

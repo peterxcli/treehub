@@ -49,7 +49,7 @@ class CredentialsView {
 
   async _onResponse(jqXHR, settings) {
     const url = settings.url || '';
-    if (!/^https:\/\/api\.github\.com\//.test(url) && !url.startsWith(`${location.origin}/api/`)) return;
+    if (!url.startsWith('https://api.github.com/')) return;
 
     const token = ((settings.headers && settings.headers.Authorization) || '').replace(/^(token|bearer)\s+/i, '');
     const json = jqXHR.responseJSON;
@@ -88,7 +88,7 @@ class CredentialsView {
    */
   _pageShows(settings) {
     if ((settings.type || settings.method || 'GET').toUpperCase() !== 'GET') return false;
-    const path = new URL(settings.url, location.href).pathname.replace(/^\/api\/v3/, '');
+    const path = new URL(settings.url).pathname;
     const match = path.match(/^\/repos\/([^/]+)\/([^/]+)(\/.*)?$/);
     if (!match) return false;
 

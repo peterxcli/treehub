@@ -42,7 +42,7 @@ test('tokens are described by their prefix, never shown whole', () => {
   assert.equal(describeToken(FINE_GRAINED).kind, 'fine_grained');
   assert.equal(describeToken(FINE_GRAINED).masked, 'github_pat_…Cd34');
   assert.equal(describeToken(OAUTH).label, 'OAuth token');
-  assert.equal(describeToken('0123456789abcdef0123456789abcdef01234567').kind, 'classic');
+  assert.deepEqual(describeToken('some-other-token-a1b2'), {kind: 'unknown', label: 'Token', masked: '…a1b2'});
 });
 
 test('fingerprints are short and stable', async () => {

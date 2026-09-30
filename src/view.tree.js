@@ -75,15 +75,15 @@ class TreeView {
           <div class="treehub-header-repo">
             <i class="treehub-icon-repo"></i>
             <a href="/${repo.username}">${repo.username}</a> /
-            <a data-pjax href="/${repo.username}/${repo.reponame}">${repo.reponame}</a>
+            <a class="treehub-header-repo-link" href="/${repo.username}/${repo.reponame}">${repo.reponame}</a>
           </div>
           <div class="treehub-header-branch">
             <i class="treehub-icon-branch"></i>
-            ${deXss((repo.displayBranch || repo.branch).toString())}
+            ${escapeHtml((repo.displayBranch || repo.branch).toString())}
           </div>
         </div>`
       )
-      .on('click', 'a[data-pjax]', function(event) {
+      .on('click', 'a.treehub-header-repo-link', function(event) {
         event.preventDefault();
         // A.href always return absolute URL, don't want that
         const href = $(this).attr('href');
@@ -141,9 +141,9 @@ class TreeView {
 
     if (!$target.is('a.jstree-anchor')) return;
 
-    // Refocus after complete so that keyboard navigation works, fix #158
+    // Refocus once the page changed, so that keyboard navigation keeps working
     const refocusAfterCompletion = () => {
-      $(document).one('pjax:success page:load', () => {
+      $(document).one(EVENT.LOC_CHANGE, () => {
         this.$jstree.get_container().focus();
       });
     };

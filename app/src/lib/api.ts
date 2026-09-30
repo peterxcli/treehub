@@ -102,7 +102,7 @@ const repoPath = (repo: string) => repo.split('/').map(encodeURIComponent).join(
 const prPath = (ref: PRRef) => `${repoPath(ref.repo)}/${ref.number}`;
 
 export function toAccount(user: User): Account {
-  return {login: user.login, githubId: String(user.githubId), name: user.name, avatarUrl: user.avatarUrl};
+  return {login: user.login, githubId: user.githubId, name: user.name, avatarUrl: user.avatarUrl};
 }
 
 export function toBookmarkEntry(bookmark: Bookmark): BookmarkEntry {

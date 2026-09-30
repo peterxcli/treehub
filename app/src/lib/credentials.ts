@@ -96,9 +96,7 @@ export function describeToken(token: string): {kind: TokenKind; label: string; m
     const [prefix, kind, label] = found;
     return {kind, label, masked: `${prefix}…${token.slice(-4)}`};
   }
-  // Tokens made before 2021 are 40 hex characters
-  const label = /^[0-9a-f]{40}$/.test(token) ? 'Personal access token (classic)' : 'Token';
-  return {kind: label === 'Token' ? 'unknown' : 'classic', label, masked: `…${token.slice(-4)}`};
+  return {kind: 'unknown', label: 'Token', masked: `…${token.slice(-4)}`};
 }
 
 /** Short fingerprint of a token, to remember facts about it without storing it again. */

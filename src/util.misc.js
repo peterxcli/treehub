@@ -1,7 +1,3 @@
-function isSafari() {
-  return typeof safari !== 'undefined' && safari.self && typeof safari.self.addEventListener === 'function';
-}
-
 function isValidTimeStamp(timestamp) {
   return !isNaN(parseFloat(timestamp)) && isFinite(timestamp);
 }
@@ -58,7 +54,6 @@ function stripTags(html) {
   return String(html || '').replace(/<[^>]*>/g, '');
 }
 
-window.isSafari = isSafari;
 window.isValidTimeStamp = isValidTimeStamp;
 window.timeAgo = timeAgo;
 window.sha256Hex = sha256Hex;

@@ -42,14 +42,14 @@ Requires Node.js 18+.
 
 ```bash
 npm install
-npm run build     # builds the extension into tmp/chrome, tmp/firefox and tmp/opera
+npm run build     # builds the extension into tmp/chrome
 npm start         # rebuilds on changes
 npm test          # unit tests
 npm run typecheck
 npm run lint
 ```
 
-Then load `tmp/chrome` as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked). `npm run dist` zips each build into `dist/`; `dist/chrome.zip` is the Chrome Web Store package.
+Then load `tmp/chrome` as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked). `npm run dist` zips it into `dist/chrome.zip`, the Chrome Web Store package. TreeHub targets Chrome 116 and later, and github.com.
 
 The code tree and review tools are a content script (`src/`, jQuery). The dashboard and the background service worker (`app/`) use Vue, TypeScript and Vite; the API types are generated from `server/proto`. The backend is a Go Cloudflare Worker with D1 ([`server/README.md`](server/README.md)). To use a local backend, run it with `DEV_AUTH=true` and build the extension against it:
 

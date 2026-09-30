@@ -1,6 +1,5 @@
 class Adapter {
-  constructor(deps) {
-    deps.forEach((dep) => window[dep]());
+  constructor() {
     this._defaultBranch = {};
   }
 
@@ -59,7 +58,7 @@ class Adapter {
             const path = item.path;
             const type = item.type;
             const index = path.lastIndexOf('/');
-            const name = deXss(path.substring(index + 1)); // Sanitizes, closes #9
+            const name = escapeHtml(path.substring(index + 1));
 
             item.id = NODE_PREFIX + path;
             item.text = name;
@@ -130,7 +129,7 @@ class Adapter {
                     item.sha;
                   item.text = `${name} @ ${item.sha.substr(0, 7)}`;
                 }
-                item.a_attr = {href: moduleUrl, 'data-skip-pjax': true};
+                item.a_attr = {href: moduleUrl};
               }
             }
           }
@@ -228,6 +227,22 @@ class Adapter {
    */
   init($sidebar, dock) {
     this.setDock($sidebar, dock);
+    this._watchLocation();
+  }
+
+  /**
+   * Triggers EVENT.LOC_CHANGE when the page changes: the site navigates client-side (e.g. GitHub's Turbo and React
+   * pages) without loading a new document, and TreeHub may need to show another tree, or hide.
+   * @api private
+   */
+  _watchLocation() {
+    let href = location.href;
+    setInterval(() => {
+      if (location.href === href) return;
+      href = location.href;
+      // Let the site render the new page first
+      setTimeout(() => $(document).trigger(EVENT.LOC_CHANGE), 300);
+    }, 200);
   }
 
   /**
@@ -284,19 +299,7 @@ class Adapter {
    * @api public
    */
   selectFile(path) {
-    if (!isSafari()) {
-      // Smooth scroll to diff file on PR page
-      const diffMatch = path.match(/#diff-\d+$/);
-      if (diffMatch) {
-        const el = $(diffMatch[0]);
-        if (el.length > 0) {
-          $('html, body').animate({scrollTop: el.offset().top - 68}, 400);
-          return;
-        }
-      }
-    }
-
-    window.location.href = path;
+    if (location.pathname !== path) this.navigate(path);
   }
 
   /**
