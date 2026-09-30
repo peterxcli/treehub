@@ -13,7 +13,8 @@ function load(...files) {
   return context;
 }
 
-const {parsePatch, mergeFileWithPatch, patchToRows, splitLines, splitHtmlLines} = load('src/util.diff.js');
+const {parsePatch, mergeFileWithPatch, patchToRows, describeRowRange, splitLines, splitHtmlLines} =
+  load('src/util.diff.js');
 const {timeAgo, sha256Hex} = load('src/util.misc.js');
 
 // Values created inside the sandbox belong to another realm; copy them before deep comparisons.
@@ -82,6 +83,59 @@ test('mergeFileWithPatch renders an added file entirely as additions', () => {
 test('patchToRows keeps hunk headers and line numbers', () => {
   const rows = patchToRows(parsePatch('@@ -7,2 +7,2 @@ fn()\n-a\n+b\n c'));
   assert.deepEqual(rowsSummary(rows), ['hunk:-:-:@@ -7,2 +7,2 @@ fn()', 'del:7:-:a', 'add:-:7:b', 'ctx:8:8:c']);
+});
+
+test('rows remember their hunk, unchanged lines outside hunks have none', () => {
+  const patch = '@@ -2,5 +2,5 @@\n 2\n 3\n-4\n+x\n 5\n 6\n@@ -9,2 +9,3 @@\n 9\n 10\n+11';
+  const newFile = ['1', '2', '3', 'x', '5', '6', '7', '8', '9', '10', '11'];
+  const hunks = (rows) => local(rows).map((r) => (r.hunk == null ? '-' : r.hunk)).join('');
+  assert.equal(hunks(mergeFileWithPatch(newFile, parsePatch(patch))), '-000000--111');
+  assert.equal(hunks(patchToRows(parsePatch(patch))), '-000000-111');
+});
+
+test('describeRowRange: lines of one hunk make a (multi-line) review comment', () => {
+  // 1 | 2 | 3 | -4 | +x | +y | 5 | 6 | 7 (outside the hunk)
+  const rows = mergeFileWithPatch(
+    ['1', '2', '3', 'x', 'y', '5', '6', '7'],
+    parsePatch('@@ -2,5 +2,6 @@\n 2\n 3\n-4\n+x\n+y\n 5\n 6')
+  );
+  const describe = (from, to) => local(describeRowRange(rows, from, to));
+
+  // One added line
+  assert.deepEqual(describe(4, 4).comment, {line: 4, side: 'RIGHT'});
+  // From the deleted line to the added ones: starts on the left side, ends on the right side
+  assert.deepEqual(describe(3, 5), {
+    comment: {line: 5, side: 'RIGHT', startLine: 4, startSide: 'LEFT'},
+    newRange: {start: 4, end: 5},
+    oldRange: {start: 4, end: 4}
+  });
+  // Selected upwards: same range
+  assert.deepEqual(describe(5, 3), describe(3, 5));
+  // Unchanged lines before a deleted line are addressed on the left side, like it
+  assert.deepEqual(describe(1, 3).comment, {line: 4, side: 'LEFT', startLine: 2, startSide: 'LEFT'});
+  // ... and on the right side otherwise
+  assert.deepEqual(describe(2, 6).comment, {line: 6, side: 'RIGHT', startLine: 3, startSide: 'RIGHT'});
+  // Deleted lines only exist in the file before the change
+  assert.deepEqual(describe(3, 3), {comment: {line: 4, side: 'LEFT'}, newRange: null, oldRange: {start: 4, end: 4}});
+});
+
+test('describeRowRange: lines outside the diff or across hunks cannot take a line comment', () => {
+  const rows = mergeFileWithPatch(['1', '2', 'x', '4'], parsePatch('@@ -2,2 +2,2 @@\n 2\n-3\n+x'));
+  // 1 is outside the hunk
+  assert.deepEqual(local(describeRowRange(rows, 0, 2)), {
+    comment: null,
+    newRange: {start: 1, end: 2},
+    oldRange: {start: 1, end: 3}
+  });
+  assert.equal(describeRowRange(rows, 4, 4).comment, null);
+
+  // Hunk headers are skipped; the range spans two hunks
+  const patchRows = patchToRows(parsePatch('@@ -1 +1 @@\n-a\n+b\n@@ -9 +9 @@\n-c\n+d'));
+  const range = local(describeRowRange(patchRows, 1, 5));
+  assert.equal(range.comment, null);
+  assert.deepEqual(range.newRange, {start: 1, end: 9});
+  assert.deepEqual(local(describeRowRange(patchRows, 0, 2)).comment,
+    {line: 1, side: 'RIGHT', startLine: 1, startSide: 'LEFT'});
 });
 
 test('splitLines drops the trailing newline only', () => {

@@ -46,10 +46,11 @@ const GH_VIEWED_FILES_QUERY = `
   }`;
 
 const GH_ADD_REVIEW_THREAD_MUTATION = `
-  mutation($reviewId: ID!, $path: String!, $body: String!, $line: Int, $side: DiffSide,
-           $subjectType: PullRequestReviewThreadSubjectType) {
+  mutation($reviewId: ID!, $path: String!, $body: String!, $line: Int, $side: DiffSide, $startLine: Int,
+           $startSide: DiffSide, $subjectType: PullRequestReviewThreadSubjectType) {
     addPullRequestReviewThread(input: {
-      pullRequestReviewId: $reviewId, path: $path, body: $body, line: $line, side: $side, subjectType: $subjectType
+      pullRequestReviewId: $reviewId, path: $path, body: $body, line: $line, side: $side,
+      startLine: $startLine, startSide: $startSide, subjectType: $subjectType
     }) {
       thread { comments(last: 1) { nodes { databaseId author { login } } } }
     }
@@ -526,6 +527,17 @@ class GitHub extends PjaxAdapter {
   }
 
   /**
+   * Returns the commit a pull request's changes are computed from: the merge base of its base and head (cached).
+   * @return {!Promise<string>} commit SHA
+   */
+  getMergeBase(repo, token, baseSha, headSha) {
+    return this._cached(`merge-base:${repo.username}/${repo.reponame}:${baseSha}...${headSha}`, async () => {
+      const {data} = await this._api(`/compare/${baseSha}...${headSha}?per_page=1`, {repo, token});
+      return data.merge_base_commit.sha;
+    });
+  }
+
+  /**
    * Returns the changes of a pull request (cached): changed files with their patches and diff anchors,
    * review threads grouped by path and the viewed state of each file if available.
    * @param {!Object} repo
@@ -649,17 +661,19 @@ class GitHub extends PjaxAdapter {
   }
 
   /**
-   * Adds a review comment to a pull request, on a line of the diff or on the whole file.
-   * GitHub only accepts line comments on lines of the diff (hunks).
-   * @param {{path: string, line: number=, side: string=, body: string, commitId: string}} comment
-   *   line and side are omitted for a comment on the file.
+   * Adds a review comment to a pull request, on lines of the diff or on the whole file.
+   * GitHub only accepts line comments on lines of the diff (hunks), and multi-line ones within one hunk.
+   * @param {{path: string, line: number=, side: string=, startLine: number=, startSide: string=, body: string,
+   *   commitId: string}} comment line and side are omitted for a comment on the file, startLine and startSide
+   *   are set for a comment on several lines (from startLine to line).
    * @param {boolean} asReview whether to add the comment to the pending review (created if needed)
    *   instead of publishing it right away.
    * @return {!Promise<{id: number, author: string, pending: boolean}>}
    */
-  async addReviewComment(repo, token, {path, line, side, body, commitId}, asReview) {
+  async addReviewComment(repo, token, {path, line, side, startLine, startSide, body, commitId}, asReview) {
     const opts = {repo, token};
-    const target = line ? {path, line, side} : {path, subject_type: 'file'};
+    const lines = startLine ? {line, side, start_line: startLine, start_side: startSide} : {line, side};
+    const target = line ? Object.assign({path}, lines) : {path, subject_type: 'file'};
 
     if (!asReview) {
       const {data} = await this._api(`/pulls/${repo.pullNumber}/comments`, opts, {
@@ -674,7 +688,7 @@ class GitHub extends PjaxAdapter {
       // Reviews can be created with line comments only, add a file comment right after creating the review
       const {data} = await this._api(`/pulls/${repo.pullNumber}/reviews`, opts, {
         method: 'POST',
-        data: line ? {commit_id: commitId, comments: [{path, line, side, body}]} : {commit_id: commitId}
+        data: line ? {commit_id: commitId, comments: [Object.assign({body}, target)]} : {commit_id: commitId}
       });
       if (line) return {id: data.id, author: data.user && data.user.login, pending: true};
       pendingReview = data;
@@ -686,6 +700,8 @@ class GitHub extends PjaxAdapter {
       body,
       line: line || null,
       side: line ? side : null,
+      startLine: startLine || null,
+      startSide: startLine ? startSide : null,
       subjectType: line ? 'LINE' : 'FILE'
     }, opts);
     const thread = result.addPullRequestReviewThread && result.addPullRequestReviewThread.thread;

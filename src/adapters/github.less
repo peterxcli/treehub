@@ -1186,8 +1186,19 @@ html.treehub-ff-opened {
 }
 
 .treehub-ff-body {
+  position: relative; // positions the actions on selected lines
   flex: 1;
   overflow: auto;
+}
+
+.treehub-ff-hint {
+  color: @fg-muted;
+  font-size: 12px;
+  white-space: nowrap;
+
+  @media (max-width: 900px) {
+    display: none;
+  }
 }
 
 .treehub-ff-message {
@@ -1260,6 +1271,27 @@ html.treehub-ff-opened {
     color: @fg-muted;
   }
 
+  // Line numbers select lines (view.full-file.js)
+  .treehub-ff-row:not(.treehub-ff-hunk) > .treehub-ff-num {
+    cursor: pointer;
+
+    &:hover {
+      color: @fg;
+    }
+  }
+
+  .treehub-ff-row.treehub-ff-selected {
+    > .treehub-ff-code,
+    > .treehub-ff-num {
+      background-color: var(--bgColor-attention-muted, #fff8c5);
+      color: @fg;
+    }
+
+    > .treehub-ff-num:first-child {
+      box-shadow: inset 3px 0 0 var(--borderColor-attention-emphasis, #9a6700);
+    }
+  }
+
   .treehub-ff-add-comment {
     display: none;
     position: absolute;
@@ -1292,6 +1324,61 @@ html.treehub-ff-opened {
     font-size: 13px;
     line-height: 1.5;
     white-space: normal;
+  }
+}
+
+.treehub-ff-selection {
+  display: flex;
+  position: absolute;
+  right: 16px;
+  z-index: 2;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid @border;
+  border-radius: 8px;
+  background-color: @bg;
+  box-shadow: @overlay-shadow;
+  font-size: 12px;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .treehub-ff-sel-label {
+    padding: 0 6px;
+    color: @fg-muted;
+    font-family: @font-mono;
+    white-space: nowrap;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: @fg;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @bg-hover;
+    }
+  }
+
+  .treehub-ff-sel-comment {
+    color: var(--fgColor-accent, #0969da);
+  }
+
+  .treehub-ff-sel-clear {
+    padding: 3px 5px;
+    color: @fg-muted;
   }
 }
 

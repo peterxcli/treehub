@@ -6,7 +6,8 @@ const FULL_FILE_LANGUAGES = {dockerfile: 'dockerfile', makefile: 'makefile', 'cm
 
 /**
  * Adds a "View full" button to each diff of the pull request "Files changed" page. It opens a dialog
- * showing the entire file with its changes, where comments can be added to any line.
+ * showing the entire file with its changes, where comments can be added to any line. Clicking line numbers
+ * selects lines (Shift+click or drag for a range) to comment on them or copy their permalink.
  */
 class FullFileView {
   constructor(adapter) {
@@ -25,8 +26,13 @@ class FullFileView {
         this.open($(event.currentTarget).attr('data-diff-id'));
       })
       .on('keydown', (event) => {
-        if (event.key === 'Escape' && this.$modal && !$(event.target).is('textarea')) this.close();
+        if (event.key !== 'Escape' || !this.$modal || $(event.target).is('textarea')) return;
+        // Clears the selected lines first
+        if (this._selection) this._clearSelection();
+        else this.close();
       });
+    // Dragging over line numbers to select lines can end anywhere
+    $(window).on('mouseup', () => (this._dragging = false));
   }
 
   async init() {
@@ -125,6 +131,7 @@ class FullFileView {
     if (unsaved && !window.confirm('You have unsaved comments. Discard them?')) return;
 
     this._request = null;
+    this._clearSelection();
     this.$modal.remove();
     this.$modal = null;
     $('html').removeClass(FULL_FILE_OPEN_CLASS);
@@ -139,6 +146,7 @@ class FullFileView {
       '<div class="treehub-ff-header">' +
       '<span class="treehub-ff-title"></span><span class="treehub-ff-stats"></span>' +
       '<span class="treehub-ff-spacer"></span>' +
+      '<span class="treehub-ff-hint">Click line numbers to select lines, Shift+click for a range</span>' +
       '<a class="treehub-ff-link" target="_blank" rel="noopener"></a>' +
       `<button type="button" class="treehub-ff-close" aria-label="Close">${octicon('x')}</button>` +
       '</div>' +
@@ -155,8 +163,28 @@ class FullFileView {
         if (event.target === event.currentTarget) this.close();
       })
       .on('click', '.treehub-ff-close', () => this.close())
-      .on('click', '.treehub-ff-add-comment', (event) => this._openForm($(event.currentTarget).closest('tr')))
-      .on('click', '.treehub-ff-cancel', (event) => $(event.currentTarget).closest('tr').remove())
+      .on('click', '.treehub-ff-add-comment', (event) => {
+        const index = +$(event.currentTarget).closest('tr').attr('data-index');
+        this._openForm(index, index);
+      })
+      .on('mousedown', '.treehub-ff-row:not(.treehub-ff-hunk) > .treehub-ff-num', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault(); // selects lines, not text
+        const index = +$(event.currentTarget).parent().attr('data-index');
+        this._select(event.shiftKey && this._selection ? this._selection.anchor : index, index);
+        this._dragging = true;
+      })
+      .on('mouseover', '.treehub-ff-row:not(.treehub-ff-hunk)', (event) => {
+        if (this._dragging && this._selection) this._select(this._selection.anchor, +event.currentTarget.dataset.index);
+      })
+      .on('mouseover', '.treehub-ff-row:not(.treehub-ff-hunk) > .treehub-ff-num', (event) => {
+        // Set on hover only, big files have many line numbers
+        event.currentTarget.title = 'Select this line. Shift+click or drag to select several lines.';
+      })
+      .on('click', '.treehub-ff-sel-comment', () => this._commentOnSelection())
+      .on('click', '.treehub-ff-sel-copy', (event) => this._copyPermalink($(event.currentTarget)))
+      .on('click', '.treehub-ff-sel-clear', () => this._clearSelection())
+      .on('click', '.treehub-ff-cancel', (event) => this._removeForm($(event.currentTarget).closest('tr')))
       .on('click', '.treehub-ff-single', (event) => this._submit($(event.currentTarget).closest('tr'), false))
       .on('click', '.treehub-ff-review', (event) => this._submit($(event.currentTarget).closest('tr'), true))
       .on('click', '.treehub-ff-thread-link', (event) => {
@@ -247,6 +275,16 @@ class FullFileView {
     const $body = this.$modal.find('.treehub-ff-body');
     $body.html(`<table class="treehub-ff-table"><tbody>${html.join('')}</tbody></table>`);
     this._rows = rows;
+    this._selection = null;
+    this.$selectionBar = $(
+      '<div class="treehub-ff-selection" role="toolbar" aria-label="Selected lines" hidden>' +
+      '<span class="treehub-ff-sel-label"></span>' +
+      `<button type="button" class="treehub-ff-sel-comment">${octicon('comment', 14)}<span>Comment</span></button>` +
+      `<button type="button" class="treehub-ff-sel-copy">${octicon('link', 14)}<span>Copy permalink</span></button>` +
+      '<button type="button" class="treehub-ff-sel-clear" aria-label="Clear the selection">' +
+      `${octicon('x', 14)}</button>` +
+      '</div>'
+    ).appendTo($body);
 
     // Center the first change, scrolling only the dialog
     const firstChange = $body.find('.treehub-ff-add, .treehub-ff-del')[0];
@@ -304,31 +342,132 @@ class FullFileView {
     );
   }
 
-  async _openForm($row) {
-    // Place the form after the conversations of that line, if any
-    let $anchor = $row;
+  /**
+   * Selects rows anchor..focus (indexes of this._rows) and shows the actions on them next to the focus row.
+   */
+  _select(anchor, focus) {
+    this._selection = {anchor, focus};
+    const from = Math.min(anchor, focus);
+    const to = Math.max(anchor, focus);
+    this.$modal.find('.treehub-ff-row').each((i, el) => {
+      const index = +el.dataset.index;
+      el.classList.toggle('treehub-ff-selected', index >= from && index <= to);
+    });
+
+    const {text, multiple} = this._rangeLabel(describeRowRange(this._rows, from, to));
+    this.$selectionBar.find('.treehub-ff-sel-label').text(`${multiple ? 'Lines' : 'Line'} ${text}`);
+    this.$selectionBar.find('.treehub-ff-sel-copy span').text('Copy permalink');
+
+    const body = this.$modal.find('.treehub-ff-body')[0];
+    const row = this.$modal.find(`.treehub-ff-row[data-index="${focus}"]`)[0];
+    const top = row.getBoundingClientRect().bottom - body.getBoundingClientRect().top + body.scrollTop;
+    this.$selectionBar.css('top', top + 2).prop('hidden', false);
+  }
+
+  _clearSelection() {
+    this._selection = null;
+    this._dragging = false;
+    if (!this.$modal) return;
+    this.$modal.find('.treehub-ff-selected').removeClass('treehub-ff-selected');
+    if (this.$selectionBar) this.$selectionBar.prop('hidden', true);
+  }
+
+  _selectedRange() {
+    const {anchor, focus} = this._selection;
+    return {from: Math.min(anchor, focus), to: Math.max(anchor, focus)};
+  }
+
+  /**
+   * Names lines like the diff does: L for the file before the change, R for the file after.
+   * @param {!Object} range result of describeRowRange()
+   * @return {{text: string, multiple: boolean}} e.g. "R12" or "L4 to R6"
+   */
+  _rangeLabel({comment, newRange, oldRange}) {
+    const name = (side, line) => `${side === 'LEFT' ? 'L' : 'R'}${line}`;
+    if (comment) {
+      return comment.startLine
+        ? {text: `${name(comment.startSide, comment.startLine)} to ${name(comment.side, comment.line)}`, multiple: true}
+        : {text: name(comment.side, comment.line), multiple: false};
+    }
+    const side = newRange ? 'RIGHT' : 'LEFT';
+    const {start, end} = newRange || oldRange;
+    return start === end
+      ? {text: name(side, start), multiple: false}
+      : {text: `${name(side, start)} to ${name(side, end)}`, multiple: true};
+  }
+
+  _commentOnSelection() {
+    if (!this._selection) return;
+    const {from, to} = this._selectedRange();
+    this.$selectionBar.prop('hidden', true);
+    this._openForm(from, to);
+  }
+
+  async _copyPermalink($button) {
+    if (!this._selection) return;
+    const {from, to} = this._selectedRange();
+    const $label = $button.find('span');
+    try {
+      await copyText(await this._permalink(describeRowRange(this._rows, from, to)));
+      $label.text('Copied!');
+    } catch (err) {
+      $label.text('Cannot copy');
+    }
+    clearTimeout(this._copyTimer);
+    this._copyTimer = setTimeout(() => $label.text('Copy permalink'), 2000);
+  }
+
+  /**
+   * Returns the link to the lines of a range in the file at a commit, which GitHub renders as a code snippet.
+   * @param {!Object} range result of describeRowRange()
+   * @return {!Promise<string>}
+   */
+  async _permalink(range) {
+    const {repo, token, file, headSha} = this._context;
+    if (range.newRange) return this._blobUrl(headSha, file.filename, range.newRange);
+
+    // Deleted lines only: they are in the file before the change, at the commit the changes start from
+    const pull = await this.adapter.getPullRequest(repo, repo.pullNumber, token);
+    const base = await this.adapter.getMergeBase(repo, token, pull.base.sha, headSha);
+    return this._blobUrl(base, file.previous_filename || file.filename, range.oldRange);
+  }
+
+  _blobUrl(sha, path, {start, end}) {
+    const {repo} = this._context;
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    const lines = start === end ? `L${start}` : `L${start}-L${end}`;
+    return `${location.origin}/${repo.username}/${repo.reponame}/blob/${sha}/${encodedPath}#${lines}`;
+  }
+
+  /**
+   * Opens a comment form for rows from..to (indexes of this._rows), after the last one and its conversations.
+   */
+  async _openForm(from, to) {
+    let $anchor = this.$modal.find(`.treehub-ff-row[data-index="${to}"]`);
     while ($anchor.next().is('.treehub-ff-thread-row, .treehub-ff-form-row')) {
-      if ($anchor.next().is('.treehub-ff-form-row')) {
-        $anchor.next().find('textarea').focus();
+      const $next = $anchor.next();
+      if ($next.is('.treehub-ff-form-row') && +$next.attr('data-from') === from && +$next.attr('data-to') === to) {
+        $next.find('textarea').focus();
         return;
       }
-      $anchor = $anchor.next();
+      $anchor = $next;
     }
 
-    const row = this._rows[$row.attr('data-index')];
-    const side = row.type === 'del' ? 'LEFT' : 'RIGHT';
-    const line = side === 'LEFT' ? row.oldNo : row.newNo;
-    // GitHub only accepts line comments on lines of the diff, others are posted as file comments
-    const inDiff = row.type !== 'same';
+    // GitHub only accepts line comments on lines of one hunk of the diff, others are posted as file comments
+    const range = describeRowRange(this._rows, from, to);
+    const {text, multiple} = this._rangeLabel(range);
     const {token} = this._context;
-    const title =
-      `Comment on line ${side === 'LEFT' ? 'L' : 'R'}${line}` +
-      (inDiff ? '' : ' · this line isn\'t part of the diff, it will be posted as a file comment linking to it');
+    let title = `Comment on ${multiple ? 'lines' : 'line'} ${text}`;
+    if (!range.comment) {
+      title += multiple
+        ? ' · these lines aren\'t all in one hunk of the diff, it will be posted as a file comment linking to them'
+        : ' · this line isn\'t part of the diff, it will be posted as a file comment linking to it';
+    }
 
     const $form = $(
-      `<tr class="treehub-ff-form-row" data-side="${side}" data-line="${line}" data-in-diff="${inDiff}">` +
+      `<tr class="treehub-ff-form-row" data-from="${from}" data-to="${to}">` +
       '<td colspan="3"><div class="treehub-ff-form">' +
-      `<div class="treehub-ff-form-title">${title}</div>` +
+      '<div class="treehub-ff-form-title"></div>' +
       '<textarea class="form-control" rows="4" placeholder="Leave a comment"></textarea>' +
       '<div class="treehub-ff-form-error"></div>' +
       '<div class="treehub-ff-form-actions">' +
@@ -337,13 +476,14 @@ class FullFileView {
       '<button type="button" class="btn btn-sm btn-primary treehub-ff-review">Start a review</button>' +
       '</div></div></td></tr>'
     );
+    $form.data('range', range).find('.treehub-ff-form-title').text(title);
     $anchor.after($form);
     $form.find('textarea').focus();
 
     if (!token) {
       $form.find('.treehub-ff-form-error').html(
         'Commenting requires a GitHub access token with the <code>repo</code> (or <code>public_repo</code>) scope. ' +
-        'Please enter one in TreeHub\'s Settings.'
+        'Please sign in or enter one in TreeHub\'s Settings.'
       );
       $form.find('.treehub-ff-single, .treehub-ff-review').prop('disabled', true);
       return;
@@ -356,26 +496,33 @@ class FullFileView {
     }
   }
 
+  /**
+   * Removes a comment form (or replaces it), and the selection of its lines.
+   */
+  _removeForm($form, $replacement) {
+    const selection = this._selection && this._selectedRange();
+    if (selection && selection.from === +$form.attr('data-from') && selection.to === +$form.attr('data-to')) {
+      this._clearSelection();
+    }
+    if ($replacement) $form.replaceWith($replacement);
+    else $form.remove();
+  }
+
   async _submit($form, asReview) {
     const $textarea = $form.find('textarea');
     const body = $textarea.val().trim();
     if (!body || $form.hasClass('treehub-ff-form--busy')) return;
 
     const {repo, token, file, headSha} = this._context;
-    const side = $form.attr('data-side');
-    const line = parseInt($form.attr('data-line'), 10);
-    const inDiff = $form.attr('data-in-diff') === 'true';
+    const range = $form.data('range');
     const $buttons = $form.find('button').prop('disabled', true);
     $form.addClass('treehub-ff-form--busy').find('.treehub-ff-form-error').empty();
 
-    // A link to a line of a file at a commit is rendered by GitHub as a code snippet
-    const encodedPath = file.filename.split('/').map(encodeURIComponent).join('/');
-    const permalink = `${location.origin}/${repo.username}/${repo.reponame}/blob/${headSha}/${encodedPath}#L${line}`;
-    const comment = inDiff
-      ? {path: file.filename, line, side, body, commitId: headSha}
-      : {path: file.filename, body: `${permalink}\n\n${body}`, commitId: headSha};
-
     try {
+      // Other lines are commented on the file, with a link to them that GitHub renders as a code snippet
+      const comment = range.comment
+        ? Object.assign({path: file.filename, body, commitId: headSha}, range.comment)
+        : {path: file.filename, body: `${await this._permalink(range)}\n\n${body}`, commitId: headSha};
       const result = await this.adapter.addReviewComment(repo, token, comment, asReview);
       if (asReview) {
         this._context.pendingReview = Promise.resolve(true);
@@ -387,7 +534,7 @@ class FullFileView {
         resolved: false,
         comments: [{author: result.author || 'You', body: comment.body, createdAt: new Date().toISOString()}]
       };
-      $form.replaceWith(this._renderThread(thread, {pending: result.pending}));
+      this._removeForm($form, $(this._renderThread(thread, {pending: result.pending})));
 
       // Refresh comments in the sidebar
       this.adapter.invalidatePullRequestChanges(repo);
@@ -401,7 +548,7 @@ class FullFileView {
 
   _describeError(err) {
     if (err.status === 401) {
-      return 'The GitHub access token is invalid. Please update it in TreeHub\'s Settings.';
+      return 'The GitHub access token is invalid. Please sign in again or update it in TreeHub\'s Settings.';
     }
     if (err.status === 403 || err.status === 404) {
       return (
@@ -481,4 +628,24 @@ function loadHighlighter() {
     } catch (ignored) {}
   }
   return window.hljs || null;
+}
+
+/**
+ * Copies text to the clipboard.
+ * @return {!Promise}
+ */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    // The Clipboard API can refuse, e.g. when the page lost the focus meanwhile
+    const textarea = $('<textarea readonly></textarea>')
+      .val(text)
+      .css({position: 'fixed', top: 0, left: 0, opacity: 0})
+      .appendTo(document.body)[0];
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (!copied) throw err;
+  }
 }

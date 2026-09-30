@@ -36,7 +36,8 @@ PULL REQUEST CHANGES
 VIEW FULL FILE
 • A "View full" button on each diff shows the entire file with its changes and syntax highlighting
 • Existing conversations appear next to their lines
-• Comment on any line, start a review or add to your pending review
+• Select lines with a click, Shift+click or drag, then comment on them or copy their permalink
+• Comment on any line or range, start a review or add to your pending review
 
 PULL REQUEST NAVIGATION
 • The repository's open pull requests, with filters: awaiting your review, reviewed by you, no reviews, changes requested, review required, approved
