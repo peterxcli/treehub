@@ -100,4 +100,34 @@ function wrapMarkdown(value, start, end, marker) {
   };
 }
 
+// https://github.com/<owner>/<name>/blob/<commit SHA>/<path>[?query]#L<start>[C<column>][-L<end>[C<column>]]
+const MARKDOWN_PERMALINK_PATTERN = new RegExp(
+  '^https://github\\.com/([^/]+)/([^/]+)/blob/([0-9a-f]{40})/([^?#]+)(?:\\?[^#]*)?' +
+  '#L(\\d+)(?:C\\d+)?(?:-L(\\d+)(?:C\\d+)?)?$'
+);
+
+/**
+ * Reads a permalink to lines of a file in a repository, which GitHub shows as a snippet of the code in the comments
+ * of that repository: a link to lines of the file at a commit, e.g.
+ * https://github.com/owner/repo/blob/<commit SHA>/path/to/file#L10-L20.
+ * @param {string} url
+ * @param {{username: string, reponame: string}} repo
+ * @return {?{sha: string, path: string, start: number, end: number}} null for another link, or another repository
+ */
+function parsePermalink(url, repo) {
+  const match = MARKDOWN_PERMALINK_PATTERN.exec(url);
+  if (!match || `${match[1]}/${match[2]}`.toLowerCase() !== `${repo.username}/${repo.reponame}`.toLowerCase()) {
+    return null;
+  }
+  let path;
+  try {
+    path = match[4].split('/').map(decodeURIComponent).join('/');
+  } catch (err) {
+    return null;
+  }
+  const [start, end] = [+match[5], match[6] ? +match[6] : +match[5]].sort((a, b) => a - b);
+  return start ? {sha: match[3], path, start, end} : null;
+}
+
 window.formatMarkdown = formatMarkdown;
+window.parsePermalink = parsePermalink;

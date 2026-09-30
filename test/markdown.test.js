@@ -7,7 +7,7 @@ const vm = require('vm');
 // The source is a plain browser script; evaluate it in a sandbox to reach its functions.
 const context = vm.createContext({window: {}});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'src/util.markdown.js'), 'utf8'), context);
-const {formatMarkdown} = context;
+const {formatMarkdown, parsePermalink} = context;
 
 /** Applies a format like the editor does; `|` marks the selection in `before` and `after`. */
 function apply(before, format, suggestion) {
@@ -58,4 +58,22 @@ test('mentions, references and suggestions', () => {
   assert.equal(apply('fixes |', 'reference'), 'fixes #|');
   assert.equal(apply('Maybe: |', 'suggestion', 'const x = 2;'), 'Maybe: \n```suggestion\n|const x = 2;|\n```\n');
   assert.equal(apply('|', 'suggestion', 'a\nb'), '```suggestion\n|a\nb|\n```\n');
+});
+
+test('permalinks to lines of the repository', () => {
+  const repo = {username: 'apache', reponame: 'ozone'};
+  const sha = '88d2060800612ea6cdc3f792ade322b191a5737d';
+  const base = `https://github.com/apache/ozone/blob/${sha}/hadoop-ozone/Some%20File.java`;
+  const read = (url) => JSON.parse(JSON.stringify(parsePermalink(url, repo)));
+  assert.deepEqual(read(`${base}#L25-L36`), {sha, path: 'hadoop-ozone/Some File.java', start: 25, end: 36});
+  assert.deepEqual(read(`${base}#L7`), {sha, path: 'hadoop-ozone/Some File.java', start: 7, end: 7});
+  // Columns of GitHub's code view, reversed ranges, query strings (?plain=1 for Markdown files)
+  assert.deepEqual(read(`${base}#L7C3-L9C1`), {sha, path: 'hadoop-ozone/Some File.java', start: 7, end: 9});
+  assert.deepEqual(read(`${base}#L9-L7`), {sha, path: 'hadoop-ozone/Some File.java', start: 7, end: 9});
+  assert.equal(read(`https://github.com/Apache/Ozone/blob/${sha}/README.md?plain=1#L1`).path, 'README.md');
+  // Not snippets: other repositories, branches, no lines
+  assert.equal(parsePermalink(`https://github.com/apache/hadoop/blob/${sha}/README.md#L1`, repo), null);
+  assert.equal(parsePermalink('https://github.com/apache/ozone/blob/master/README.md#L1', repo), null);
+  assert.equal(parsePermalink(`${base}`, repo), null);
+  assert.equal(parsePermalink(`${base}#L0`, repo), null);
 });

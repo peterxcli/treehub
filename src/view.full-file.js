@@ -133,6 +133,7 @@ class FullFileView {
           ? null
           : await this.adapter.getFileContent(repo, token, file.filename, headSha).catch(() => null);
       if (this._request !== request) return;
+      this._context.content = content;
 
       this._renderBody(file, content);
     } catch (err) {
@@ -310,6 +311,10 @@ class FullFileView {
     $body.html(`<table class="treehub-ff-table"><tbody>${html.join('')}</tbody></table>`);
     this._rows = rows;
     this._code = code;
+    // Permalinks of the conversations that GitHub left as links (the links stay if the files can't be loaded)
+    $body.find('.treehub-ff-comment-body.markdown-body').each((index, el) => {
+      this._showSnippets(el).catch(() => {});
+    });
     this._selection = null;
     this.$selectionBar = $(
       '<div class="treehub-ff-selection" role="toolbar" aria-label="Selected lines" hidden>' +
@@ -547,9 +552,8 @@ class FullFileView {
   }
 
   async _submit($form, asReview) {
-    const $textarea = $form.find('textarea');
-    const body = $textarea.val().trim();
-    if (!body || $form.hasClass('treehub-ff-form--busy')) return;
+    const text = $form.find('textarea').val().trim();
+    if (!text || $form.hasClass('treehub-ff-form--busy')) return;
 
     const {repo, token, file, headSha} = this._context;
     const range = $form.data('range');
@@ -557,10 +561,8 @@ class FullFileView {
     $form.addClass('treehub-ff-form--busy').find('.treehub-ff-form-error').empty();
 
     try {
-      // Other lines are commented on the file, with a link to them that GitHub renders as a code snippet
-      const comment = range.comment
-        ? Object.assign({path: file.filename, body, commitId: headSha}, range.comment)
-        : {path: file.filename, body: `${await this._permalink(range)}\n\n${body}`, commitId: headSha};
+      const body = await this._commentBody($form, text);
+      const comment = Object.assign({path: file.filename, body, commitId: headSha}, range.comment);
       const result = await this.adapter.addReviewComment(repo, token, comment, asReview);
       if (asReview) {
         this._context.pendingReview = Promise.resolve(true);
@@ -568,10 +570,7 @@ class FullFileView {
       }
 
       // As GitHub renders it: from GitHub's answer, else rendered like the preview
-      const html = this._showSuggestions(
-        result.html || (await this._renderMarkdown(comment.body).catch(() => '')),
-        $form
-      ) || null;
+      const html = await this._renderComment($form, body, result.html).catch(() => result.html || null);
       const thread = {
         url: result.pending ? null : `/${repo.username}/${repo.reponame}/pull/${repo.pullNumber}/files#r${result.id}`,
         resolved: false,
@@ -676,7 +675,7 @@ class FullFileView {
     }
     $preview.html('<p class="treehub-ff-preview-note">Loading preview…</p>');
     try {
-      const html = this._showSuggestions(await this._renderMarkdown(text), $form);
+      const html = await this._renderComment($form, await this._commentBody($form, text));
       // Unless the user went back to writing meanwhile
       if ($editor.hasClass('treehub-ff-previewing') && $textarea.val() === text) $preview.html(html);
     } catch (err) {
@@ -694,14 +693,112 @@ class FullFileView {
     const {repo, token} = this._context;
     // References such as #12 depend on the repository
     const key = `${repo.username}/${repo.reponame}\n${text}`;
-    const cache = (this._markdownCache = this._markdownCache || new Map());
-    if (!cache.has(key)) {
-      const promise = this.adapter.renderMarkdown(repo, token, text);
-      cache.set(key, promise);
-      promise.catch(() => cache.delete(key));
-      if (cache.size > 20) cache.delete(cache.keys().next().value);
-    }
-    return cache.get(key);
+    this._markdownCache = this._markdownCache || new Map();
+    return rememberLast(this._markdownCache, key, () => this.adapter.renderMarkdown(repo, token, text), 20);
+  }
+
+  /**
+   * The comment of a form as it's posted. Comments on other lines than those of one hunk are posted on the file,
+   * starting with the permalink to their lines, which GitHub shows as a snippet (unless the text links to them).
+   * @return {!Promise<string>}
+   */
+  async _commentBody($form, text) {
+    const range = $form.data('range');
+    if (range.comment) return text;
+    const permalink = await this._permalink(range);
+    return text.includes(permalink) ? text : `${permalink}\n\n${text}`;
+  }
+
+  /**
+   * Renders a form's comment as GitHub shows it: Markdown rendered by GitHub, with suggestions and code snippets.
+   * @param {string} body
+   * @param {?string=} html GitHub's rendering of the comment, if known
+   * @return {!Promise<string>}
+   */
+  async _renderComment($form, body, html) {
+    // A template doesn't load or run anything of its content
+    const template = document.createElement('template');
+    template.innerHTML = html || (await this._renderMarkdown(body));
+    this._showSuggestions(template.content, $form);
+    await this._showSnippets(template.content);
+    return template.innerHTML;
+  }
+
+  /**
+   * Shows permalinks to lines of this repository as GitHub does in comments: as snippets of the code. GitHub leaves
+   * them as links in some renderings (e.g. of its Markdown API for some tokens). Like GitHub, only bare links, not
+   * [text](link).
+   * @param {!Node} root rendered comments
+   * @return {!Promise}
+   */
+  async _showSnippets(root) {
+    const decode = (url) => {
+      try {
+        return decodeURI(url);
+      } catch (err) {
+        return url;
+      }
+    };
+    const links = [...root.querySelectorAll('a[href]')]
+      .map((link) => ({link, url: link.getAttribute('href')}))
+      .filter(({link, url}) => decode(url) === decode(link.textContent.trim()))
+      .map(({link, url}) => ({link, url, permalink: parsePermalink(url, this._context.repo)}))
+      .filter(({permalink}) => permalink);
+
+    await Promise.all(
+      links.map(async ({link, url, permalink}) => {
+        const content = await this._fileAt(permalink.sha, permalink.path).catch(() => null);
+        const snippet = content != null && this._renderSnippet(url, permalink, content);
+        if (snippet) replaceWithBlock(link, snippet);
+      })
+    );
+  }
+
+  /**
+   * GitHub's snippet of lines of a file (with its markup, so that it looks like in posted comments).
+   * @return {?Element} null if the file doesn't have the lines
+   */
+  _renderSnippet(url, {sha, path, start, end}, content) {
+    const {repo} = this._context;
+    const lines = splitLines(content);
+    if (start > lines.length || content.indexOf('\u0000') !== -1) return null;
+    const rows = lines.slice(start - 1, end).map((text) => ({type: 'same', newNo: null, text}));
+    const code = this._highlight(path, null, rows);
+    const last = start + rows.length - 1;
+
+    const snippet = document.createElement('div');
+    snippet.className = 'Box Box--condensed my-2 treehub-ff-snippet';
+    snippet.innerHTML =
+      '<div class="Box-header f6">' +
+      `<p class="mb-0 text-bold"><a href="${escapeHtml(url)}">${escapeHtml(`${repo.reponame}/${path}`)}</a></p>` +
+      `<p class="mb-0 color-fg-muted">${start === last ? `Line ${start}` : `Lines ${start} to ${last}`} in ` +
+      `<a class="commit-tease-sha Link--inTextBlock" href="/${repo.username}/${repo.reponame}/commit/${sha}">` +
+      `${sha.slice(0, 7)}</a></p>` +
+      '</div>' +
+      '<div class="Box-body p-0 blob-wrapper blob-wrapper-embedded data">' +
+      '<table class="highlight tab-size mb-0" data-tab-size="8"><tbody>' +
+      rows
+        .map(
+          (row, i) =>
+            '<tr class="border-0">' +
+            `<td class="blob-num border-0 px-3 py-0 color-bg-default" data-line-number="${start + i}"></td>` +
+            `<td class="blob-code blob-code-inner border-0 px-3 py-0 color-bg-default">${code[i]}</td></tr>`
+        )
+        .join('') +
+      '</tbody></table></div>';
+    return snippet;
+  }
+
+  /**
+   * A file of this repository at a commit, remembered for the last ones.
+   * @return {!Promise<string>}
+   */
+  _fileAt(sha, path) {
+    const {repo, token, file, headSha, content} = this._context;
+    if (sha === headSha && path === file.filename && content != null) return Promise.resolve(content);
+    this._fileCache = this._fileCache || new Map();
+    const key = `${repo.username}/${repo.reponame}\n${sha}\n${path}`;
+    return rememberLast(this._fileCache, key, () => this.adapter.getFileContent(repo, token, path, sha), 5);
   }
 
   /**
@@ -720,22 +817,19 @@ class FullFileView {
   /**
    * Shows the suggestions of a form's rendered comment as GitHub does: its lines replaced by the suggested
    * ones. GitHub's Markdown API renders them as code blocks.
-   * @param {string} html
-   * @return {string}
+   * @param {!Node} root the rendered comment
    */
-  _showSuggestions(html, $form) {
-    if (!html.includes('lang="suggestion"') || !this._canSuggest($form.data('range'))) return html;
+  _showSuggestions(root, $form) {
+    const blocks = root.querySelectorAll('pre[lang="suggestion"]');
+    if (!blocks.length || !this._canSuggest($form.data('range'))) return;
     const indexes = this._suggestedRows($form);
-    if (!indexes.length) return html;
+    if (!indexes.length) return;
     const firstLine = this._rows[indexes[0]].newNo;
     const row = (type, line, code) =>
       `<tr class="treehub-ff-${type}"><td class="treehub-ff-num">${line}</td><td class="treehub-ff-code">` +
       `<span class="treehub-ff-marker">${type === 'add' ? '+' : '-'}</span>${code}</td></tr>`;
 
-    // A template doesn't load or run anything of its content
-    const template = document.createElement('template');
-    template.innerHTML = html;
-    template.content.querySelectorAll('pre[lang="suggestion"]').forEach((pre) => {
+    blocks.forEach((pre) => {
       // No line removes the lines
       const text = pre.textContent;
       const lines = text ? text.replace(/\n$/, '').split('\n') : [];
@@ -753,7 +847,6 @@ class FullFileView {
       );
       pre.replaceWith($block[0]);
     });
-    return template.innerHTML;
   }
 
   _describeError(err) {
@@ -825,6 +918,43 @@ class FullFileView {
     const ext = (name.match(/\.([^.]+)$/) || [])[1];
     return ext && hljs.getLanguage(ext) ? ext : null;
   }
+}
+
+/**
+ * Puts a block in place of an element. In a paragraph, the block ends the paragraph and the rest of it follows in
+ * another one, as when parsing HTML (a paragraph can't contain blocks), like GitHub's snippets of permalinks.
+ */
+function replaceWithBlock(element, block) {
+  const paragraph = element.parentElement && element.parentElement.closest('p');
+  if (!paragraph) {
+    element.replaceWith(block);
+    return;
+  }
+  const rest = paragraph.ownerDocument.createRange();
+  rest.setStartAfter(element);
+  rest.setEnd(paragraph, paragraph.childNodes.length);
+  const after = paragraph.cloneNode(false);
+  after.append(rest.extractContents());
+  element.remove();
+  paragraph.after(block, after);
+}
+
+/**
+ * Remembers the last promises of a loader by key, not the failed ones.
+ * @param {!Map<string, !Promise>} cache
+ * @param {string} key
+ * @param {function(): !Promise} load
+ * @param {number} size how many to remember
+ * @return {!Promise}
+ */
+function rememberLast(cache, key, load, size) {
+  if (!cache.has(key)) {
+    const promise = load();
+    cache.set(key, promise);
+    promise.catch(() => cache.get(key) === promise && cache.delete(key));
+    if (cache.size > size) cache.delete(cache.keys().next().value);
+  }
+  return cache.get(key);
 }
 
 /**

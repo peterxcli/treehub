@@ -38,7 +38,7 @@ VIEW FULL FILE
 • Existing conversations appear next to their lines
 • Select lines with a click, Shift+click or drag, then comment on them or copy their permalink
 • Comment on any line or range, start a review or add to your pending review
-• Write comments like on GitHub: Markdown toolbar and shortcuts, suggested changes, and a preview rendered by GitHub
+• Write comments like on GitHub: Markdown toolbar and shortcuts, suggested changes, and a preview rendered by GitHub, with code snippets for permalinks to lines of the repository
 
 PULL REQUEST NAVIGATION
 • The repository's open pull requests, with filters: awaiting your review, reviewed by you, no reviews, changes requested, review required, approved
