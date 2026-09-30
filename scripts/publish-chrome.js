@@ -7,6 +7,8 @@
  *   node scripts/publish-chrome.js --upload-only [zip] upload without submitting, e.g. to fill the justifications
  *                                                      of new permissions in the Developer Dashboard first
  *   node scripts/publish-chrome.js --status            only print the status of the item (read-only)
+ *   node scripts/publish-chrome.js --cancel            cancel the submission pending review, e.g. to submit a newer
+ *                                                      version instead (the listing can be edited again)
  *
  * Environment:
  *   CWS_SERVICE_ACCOUNT       JSON key of the service account (or CWS_SERVICE_ACCOUNT_FILE: path to the key file)
@@ -116,6 +118,7 @@ async function main() {
   const args = process.argv.slice(2);
   const statusOnly = args.includes('--status');
   const uploadOnly = args.includes('--upload-only');
+  const cancel = args.includes('--cancel');
   const zip = args.find((arg) => !arg.startsWith('--')) || 'dist/chrome.zip';
 
   const item = `${API}/v2/publishers/${env('CWS_PUBLISHER_ID')}/items/${env('CWS_EXTENSION_ID')}`;
@@ -127,8 +130,18 @@ async function main() {
   if (statusOnly) return;
 
   const submitted = status.submittedItemRevisionStatus;
-  if (submitted && submitted.state === 'PENDING_REVIEW') {
-    throw new Error('A submission is already pending review. Cancel it in the Developer Dashboard, then retry.');
+  const pending = submitted && submitted.state === 'PENDING_REVIEW';
+  if (cancel) {
+    if (!pending) throw new Error('No submission is pending review.');
+    await call('POST', `${item}:cancelSubmission`, token);
+    console.log('Cancelled the submission pending review.');
+    console.log(describe(await fetchStatus()));
+    return;
+  }
+  if (pending) {
+    throw new Error(
+      'A submission is already pending review. Cancel it (--cancel, or in the Developer Dashboard), then retry.'
+    );
   }
 
   console.log(`Uploading ${zip}`);

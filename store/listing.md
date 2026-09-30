@@ -71,7 +71,12 @@ Based on the open-source edition of Octotree. Not affiliated with or endorsed by
 **Graphic assets** (in this folder):
 
 - Store icon: `icon-128.png`
-- Screenshots (1280×800): `screenshot-1.png` to `screenshot-5.png`
+- Screenshots (1280×800), in this order:
+  1. `screenshot-1.png`: a pull request, its changes and review conversations in the sidebar
+  2. `screenshot-2.png`: View full, commenting on two lines with a Markdown preview (code snippet, suggested change)
+  3. `screenshot-3.png`: the review queue in the dashboard
+  4. `screenshot-4.png`: the sidebar docked on the right in the dark theme, names wrapping rather than cut
+  5. `screenshot-5.png`: the code tree of a repository
 - Small promo tile (440×280): `promo-small.png`
 
 **Homepage URL**: https://github.com/peterxcli/treehub
