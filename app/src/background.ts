@@ -66,6 +66,8 @@ async function handle(request: Request): Promise<unknown> {
       return hub.recordTokenAccepted(request.source, request.scopes);
     case 'treehub:dismissSigninProblem':
       return hub.dismissSigninProblem();
+    case 'treehub:githubToken':
+      return hub.currentGitHubToken();
     case 'treehub:recordView':
       return hub.recordView({kind: request.kind, repo: request.repo, number: request.number}, request.title);
     case 'treehub:listHistory':

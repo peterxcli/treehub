@@ -15,7 +15,7 @@ function load(...files) {
 
 const {parsePatch, mergeFileWithPatch, patchToRows, describeRowRange, splitLines, splitHtmlLines} =
   load('src/util.diff.js');
-const {timeAgo, sha256Hex, splitName} = load('src/util.misc.js');
+const {timeAgo, sha256Hex, splitName, pastHalfLife} = load('src/util.misc.js');
 
 // Values created inside the sandbox belong to another realm; copy them before deep comparisons.
 const local = (value) => JSON.parse(JSON.stringify(value));
@@ -178,4 +178,14 @@ test('splitName splits names where they read well across lines', () => {
   // Nothing to split
   assert.deepEqual(split('.devcontainer'), ['.devcontainer']);
   assert.deepEqual(split('README'), ['README']);
+});
+
+test('pastHalfLife: renew once half the lifetime has passed, also after expiry', () => {
+  const issued = '2026-09-30T00:00:00Z';
+  const expires = '2026-09-30T08:00:00Z';
+  assert.equal(pastHalfLife(issued, expires, Date.parse('2026-09-30T03:59:59Z')), false);
+  assert.equal(pastHalfLife(issued, expires, Date.parse('2026-09-30T04:00:00Z')), false);
+  assert.equal(pastHalfLife(issued, expires, Date.parse('2026-09-30T04:00:01Z')), true);
+  assert.equal(pastHalfLife(issued, expires, Date.parse('2026-10-01T00:00:00Z')), true);
+  assert.equal(pastHalfLife('not a date', expires, Date.parse('2026-10-01T00:00:00Z')), false);
 });

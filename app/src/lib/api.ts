@@ -5,6 +5,7 @@ import {API_URL} from '../config.ts';
 import {
   BookmarkSchema,
   ErrorResponseSchema,
+  GitHubTokenSchema,
   HistorySettingsSchema,
   ListBookmarksResponseSchema,
   ListHistoryResponseSchema,
@@ -133,6 +134,26 @@ export async function deleteAccount(session: string): Promise<void> {
 /** Revokes every session of the user, on all devices. */
 export async function logoutAll(session: string): Promise<void> {
   await call(OkResponseSchema, 'POST', '/api/logout-all', session);
+}
+
+/** A GitHub token renewed with its refresh token, which GitHub replaces too (see renewGitHubToken in hub.ts). */
+export interface RenewedGitHubToken {
+  accessToken: string;
+  expiresAt?: string;
+  refreshToken?: string;
+  refreshTokenExpiresAt?: string;
+}
+
+/** Renews an expiring GitHub token through the TreeHub server, which has the OAuth App's secret. */
+export async function refreshGitHubToken(session: string, refreshToken: string): Promise<RenewedGitHubToken> {
+  const token = await call(GitHubTokenSchema, 'POST', '/api/github/token', session, {refresh_token: refreshToken});
+  if (!token.accessToken) throw new ApiError(500, 'internal', 'The TreeHub server returned no GitHub token.');
+  return {
+    accessToken: token.accessToken,
+    expiresAt: token.expiresAt,
+    refreshToken: token.refreshToken,
+    refreshTokenExpiresAt: token.refreshTokenExpiresAt
+  };
 }
 
 /** Exchanges a session for a new one, valid for 30 days from now (see renewSession in hub.ts). */

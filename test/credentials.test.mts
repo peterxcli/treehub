@@ -5,6 +5,7 @@ import {
   describeRequest,
   describeToken,
   explainCredentialProblem,
+  pastHalfLife,
   readSession,
   sessionNeedsRefresh,
   tokenFingerprint,
@@ -199,4 +200,13 @@ test('TreeHub sessions are renewed past half their lifetime', () => {
   // Without its times, or not a JWT
   assert.equal(sessionNeedsRefresh(jwt({sub: 'peterxcli', exp: NOW / 1000 + DAY}), NOW), false);
   assert.equal(sessionNeedsRefresh('not-a-jwt', NOW), false);
+});
+
+test('GitHub tokens of 8 hours are renewed after 4, and once expired', () => {
+  const issued = new Date(NOW).toISOString();
+  const expires = new Date(NOW + 8 * 3600 * 1000).toISOString();
+  assert.equal(pastHalfLife(issued, expires, NOW + 4 * 3600 * 1000), false);
+  assert.equal(pastHalfLife(issued, expires, NOW + 4 * 3600 * 1000 + 1), true);
+  assert.equal(pastHalfLife(issued, expires, NOW + 9 * 3600 * 1000), true);
+  assert.equal(pastHalfLife(issued, 'never', NOW), false);
 });

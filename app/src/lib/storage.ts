@@ -33,6 +33,14 @@ export interface Auth {
   session: string;
   /** GitHub OAuth token (repo scope), kept only in this browser. Absent with the dev sign-in. */
   githubToken?: string;
+  /**
+   * When githubToken was issued and expires, if GitHub makes it expire (an option of the OAuth App: 8 hours), and
+   * its refresh token (valid 6 months), to renew it through the TreeHub server (see renewGitHubToken in hub.ts).
+   */
+  githubTokenIssuedAt?: string;
+  githubTokenExpiresAt?: string;
+  githubRefreshToken?: string;
+  githubRefreshTokenExpiresAt?: string;
   account: Account;
   signedInAt: string;
 }

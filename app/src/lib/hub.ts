@@ -6,6 +6,7 @@ import {ApiError} from './api.ts';
 import {signIn as authorize} from './auth.ts';
 import {
   explainCredentialProblem,
+  pastHalfLife,
   readSession,
   sessionNeedsRefresh,
   tokenFingerprint,
@@ -107,9 +108,64 @@ function renewSession(auth: Auth): Promise<Auth> {
   return renewing;
 }
 
-/** The token used to read GitHub: the one from signing in, else the one entered in the sidebar settings. */
+/** The token used to read GitHub: the one from signing in (renewed if due), else the one of the sidebar settings. */
 async function githubToken(auth: Auth): Promise<string | undefined> {
-  return auth.githubToken || (await personalToken());
+  return (await renewGitHubToken(auth)).githubToken || (await personalToken());
+}
+
+/** The GitHub token from signing in, renewed if due, for the pages (src/core.api.js); null when signed out. */
+export async function currentGitHubToken(): Promise<string | null> {
+  const {auth} = await load();
+  return (auth && (await renewGitHubToken(auth)).githubToken) || null;
+}
+
+// The renewal of the GitHub token under way, if any
+let renewingGitHub: Promise<Auth> | null = null;
+
+/**
+ * Renews the GitHub token from signing in once past half its lifetime (also once expired), with its refresh token,
+ * through the TreeHub server: GitHub OAuth Apps can make their tokens expire after 8 hours. Not called within
+ * exclusive().
+ */
+function renewGitHubToken(auth: Auth): Promise<Auth> {
+  const {githubRefreshToken, githubTokenExpiresAt, githubRefreshTokenExpiresAt} = auth;
+  const due =
+    githubRefreshToken &&
+    githubTokenExpiresAt &&
+    pastHalfLife(auth.githubTokenIssuedAt || auth.signedInAt, githubTokenExpiresAt) &&
+    !(githubRefreshTokenExpiresAt && Date.parse(githubRefreshTokenExpiresAt) <= Date.now());
+  if (!due) return Promise.resolve(auth);
+  renewingGitHub =
+    renewingGitHub ||
+    (async () => {
+      let change: Partial<Auth>;
+      try {
+        const token = await backend(api.refreshGitHubToken(auth.session, githubRefreshToken));
+        change = {
+          githubToken: token.accessToken,
+          githubTokenIssuedAt: new Date().toISOString(),
+          githubTokenExpiresAt: token.expiresAt,
+          githubRefreshToken: token.refreshToken,
+          githubRefreshTokenExpiresAt: token.refreshTokenExpiresAt
+        };
+      } catch (err) {
+        // GitHub won't renew it anymore: stop asking. The token works until it expires; then GitHub refuses it and
+        // the pages say to sign in again. Other failures: the next use tries again.
+        if (!(err instanceof ApiError && err.code === 'github_refresh_refused')) return auth;
+        change = {githubRefreshToken: undefined, githubRefreshTokenExpiresAt: undefined};
+      }
+      return exclusive(async () => {
+        const {auth: current} = await load();
+        // Signed out, or in again, meanwhile: that stands
+        if (!current || current.githubRefreshToken !== githubRefreshToken) return current || auth;
+        const renewed = {...current, ...change};
+        await save({auth: renewed});
+        return renewed;
+      });
+    })().finally(() => {
+      renewingGitHub = null;
+    });
+  return renewingGitHub;
 }
 
 /**

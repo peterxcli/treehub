@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -282,6 +283,8 @@ type fakeGitHub struct {
 	user       auth.GitHubUser // GET /user answer
 	tokenError string          // non-empty: the token endpoint reports this error
 	userStatus int             // non-zero: GET /user fails with this status
+	expiring   bool            // tokens expire: answers carry expires_in and a refresh token
+	refreshes  int             // refresh requests answered
 
 	tokenForm   url.Values  // last token request body
 	tokenHeader http.Header // last token request headers
@@ -301,9 +304,25 @@ func (f *fakeGitHub) RoundTrip(req *http.Request) (*http.Response, error) {
 		if f.tokenError != "" {
 			return jsonResponse(http.StatusOK, map[string]string{"error": f.tokenError, "error_description": "nope"})
 		}
-		return jsonResponse(http.StatusOK, map[string]string{
-			"access_token": "gho_test_" + f.tokenForm.Get("code"), "token_type": "bearer", "scope": "repo",
-		})
+		if f.tokenForm.Get("grant_type") == "refresh_token" {
+			if !strings.HasPrefix(f.tokenForm.Get("refresh_token"), "ghr_") {
+				return jsonResponse(http.StatusOK, map[string]string{"error": "bad_refresh_token", "error_description": "nope"})
+			}
+			f.refreshes++
+			n := strconv.Itoa(f.refreshes)
+			return jsonResponse(http.StatusOK, map[string]any{
+				"access_token": "gho_refreshed_" + n, "expires_in": 28800, "refresh_token": "ghr_refreshed_" + n,
+				"refresh_token_expires_in": 15897600, "token_type": "bearer", "scope": "",
+			})
+		}
+		answer := map[string]any{"access_token": "gho_test_" + f.tokenForm.Get("code"), "token_type": "bearer", "scope": "repo"}
+		if f.expiring {
+			// GitHub's numbers, one as a string
+			answer["expires_in"] = 28800
+			answer["refresh_token"] = "ghr_test_" + f.tokenForm.Get("code")
+			answer["refresh_token_expires_in"] = "15897600"
+		}
+		return jsonResponse(http.StatusOK, answer)
 	case "GET https://api.github.com/user":
 		f.userHeader = req.Header.Clone()
 		if f.userStatus != 0 {

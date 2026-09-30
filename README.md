@@ -90,7 +90,7 @@ Pin or unpin the sidebar with <kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>s</kbd> (macOS)
 
 ## Privacy
 
-Without signing in, TreeHub talks only to GitHub and collects nothing. When you sign in, the TreeHub server keeps your GitHub handle and profile, your bookmarks, your queued pull requests and when you last opened them; your GitHub token stays in your browser, and statuses are computed there. See the [privacy policy](PRIVACY.md).
+Without signing in, TreeHub talks only to GitHub and collects nothing. When you sign in, the TreeHub server keeps your GitHub handle and profile, your bookmarks, your queued pull requests and when you last opened them; your GitHub token stays in your browser (the server only passes it on when you sign in, and when it renews a token that GitHub made expire), and statuses are computed there. See the [privacy policy](PRIVACY.md).
 
 ## Development
 

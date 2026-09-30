@@ -62,10 +62,22 @@ export async function signIn(devLogin?: string): Promise<Auth> {
   const session = fragment.get('session');
   if (!session) throw new AuthError('session', 'Sign-in failed: the TreeHub server returned no session.');
 
+  const signedInAt = new Date().toISOString();
+  const githubToken = fragment.get('github_token') || undefined;
+  const githubTokenExpiresAt = fragment.get('github_expires_at') || undefined;
   return {
     session,
-    githubToken: fragment.get('github_token') || undefined,
+    githubToken,
+    // An expiring GitHub token, and what renews it
+    ...(githubToken && githubTokenExpiresAt
+      ? {
+          githubTokenIssuedAt: signedInAt,
+          githubTokenExpiresAt,
+          githubRefreshToken: fragment.get('github_refresh_token') || undefined,
+          githubRefreshTokenExpiresAt: fragment.get('github_refresh_expires_at') || undefined
+        }
+      : {}),
     account: await getMe(session),
-    signedInAt: new Date().toISOString()
+    signedInAt
   };
 }

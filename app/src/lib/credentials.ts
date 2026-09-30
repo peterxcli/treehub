@@ -124,9 +124,18 @@ export function readSession(jwt: string): {issuedAt: string | null; expiresAt: s
 export function sessionNeedsRefresh(jwt: string, now = Date.now()): boolean {
   const session = readSession(jwt);
   if (!session || !session.issuedAt || !session.expiresAt) return false;
-  const issued = Date.parse(session.issuedAt);
-  const expires = Date.parse(session.expiresAt);
-  return now > issued + (expires - issued) / 2 && now < expires;
+  return pastHalfLife(session.issuedAt, session.expiresAt, now) && now < Date.parse(session.expiresAt);
+}
+
+/**
+ * Whether a credential issued and expiring at these times (RFC 3339) has passed half its lifetime:
+ * now > issued + (expires - issued) / 2. Renewing then leaves room for failures and a sleeping browser.
+ */
+export function pastHalfLife(issuedAt: string, expiresAt: string, now = Date.now()): boolean {
+  const issued = Date.parse(issuedAt);
+  const expires = Date.parse(expiresAt);
+  if (Number.isNaN(issued) || Number.isNaN(expires)) return false;
+  return now > issued + (expires - issued) / 2;
 }
 
 // ---------- Scopes ----------

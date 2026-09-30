@@ -16,6 +16,7 @@ export type Request =
   | {type: 'treehub:explainCredentials'; response: ResponseInfo; source: 'settings' | 'signin' | 'none'}
   | {type: 'treehub:tokenAccepted'; source: 'settings' | 'signin'; scopes?: string}
   | {type: 'treehub:dismissSigninProblem'}
+  | {type: 'treehub:githubToken'}
   | {type: 'treehub:recordView'; kind: 'repo' | 'pull'; repo: string; number?: number; title?: string}
   | {type: 'treehub:listHistory'; limit?: number; cursor?: string; kind?: 'repo' | 'pull'}
   | {type: 'treehub:deleteHistoryEntry'; kind: 'repo' | 'pull'; repo: string; number?: number}

@@ -79,6 +79,16 @@ function splitName(name) {
   return name.split(/(?<=[/_-])|(?=\.)|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/);
 }
 
+/**
+ * Whether a credential issued and expiring at these times (RFC 3339) has passed half its lifetime, when it is renewed
+ * (as pastHalfLife in app/src/lib/credentials.ts).
+ */
+function pastHalfLife(issuedAt, expiresAt, now = Date.now()) {
+  const issued = Date.parse(issuedAt);
+  const expires = Date.parse(expiresAt);
+  return !isNaN(issued) && !isNaN(expires) && now > issued + (expires - issued) / 2;
+}
+
 window.isValidTimeStamp = isValidTimeStamp;
 window.timeAgo = timeAgo;
 window.sha256Hex = sha256Hex;
@@ -86,3 +96,4 @@ window.escapeHtml = escapeHtml;
 window.stripTags = stripTags;
 window.errorJson = errorJson;
 window.splitName = splitName;
+window.pastHalfLife = pastHalfLife;

@@ -259,6 +259,50 @@ func TestGitHubCallback(t *testing.T) {
 	}
 }
 
+func TestGitHubCallbackExpiringToken(t *testing.T) {
+	e := newTestEnv(t, Config{})
+	e.github.expiring = true
+	e.github.user = auth.GitHubUser{Login: "octocat", ID: 583231}
+
+	frag := extensionFragment(t, e.do("GET", "/auth/github/callback?code="+testCode+"&state="+url.QueryEscape(e.startState()), "", ""))
+	if len(frag) != 7 || frag.Get("github_token") != testToken || frag.Get("github_refresh_token") != "ghr_test_"+testCode ||
+		frag.Get("github_expires_at") != e.now.Add(8*time.Hour).Format(time.RFC3339) ||
+		frag.Get("github_refresh_expires_at") != e.now.Add(15897600*time.Second).Format(time.RFC3339) {
+		t.Fatalf("fragment = %v", frag)
+	}
+}
+
+func TestRefreshGitHubToken(t *testing.T) {
+	e := newTestEnv(t, Config{})
+	e.github.user = auth.GitHubUser{Login: "octocat", ID: 583231}
+	token := e.session("octocat", 583231)
+
+	res := decode[treehubv1.GitHubToken](t, e.do("POST", "/api/github/token", token, `{"refresh_token":"ghr_one"}`), http.StatusOK)
+	if res.AccessToken != "gho_refreshed_1" || res.GetRefreshToken() != "ghr_refreshed_1" ||
+		res.GetExpiresAt() != e.now.Add(8*time.Hour).Format(time.RFC3339) ||
+		res.GetRefreshTokenExpiresAt() != e.now.Add(15897600*time.Second).Format(time.RFC3339) {
+		t.Fatalf("token = %+v", res)
+	}
+	// What GitHub was sent: the refresh token with the app's credentials; then the new token read the user
+	f := e.github
+	if f.tokenForm.Get("grant_type") != "refresh_token" || f.tokenForm.Get("refresh_token") != "ghr_one" ||
+		f.tokenForm.Get("client_id") != "client-id" || f.tokenForm.Get("client_secret") != "client-secret" {
+		t.Fatalf("token request = %v", f.tokenForm)
+	}
+	if f.userHeader.Get("Authorization") != "Bearer gho_refreshed_1" {
+		t.Fatalf("user request headers = %v", f.userHeader)
+	}
+
+	// GitHub refuses the refresh token: signing in again is the only way
+	wantError(t, e.do("POST", "/api/github/token", token, `{"refresh_token":"expired"}`), http.StatusBadRequest, "github_refresh_refused")
+	// A token of another GitHub account isn't handed out
+	e.github.user = auth.GitHubUser{Login: "someone", ID: 1}
+	wantError(t, e.do("POST", "/api/github/token", token, `{"refresh_token":"ghr_other"}`), http.StatusForbidden, "github_user_mismatch")
+	// Signed in, with a refresh token
+	wantError(t, e.do("POST", "/api/github/token", "", `{"refresh_token":"ghr_one"}`), http.StatusUnauthorized, "login_required")
+	wantError(t, e.do("POST", "/api/github/token", token, `{}`), http.StatusBadRequest, "invalid_body")
+}
+
 func TestGitHubCallbackRejectsBadState(t *testing.T) {
 	e := newTestEnv(t, Config{})
 	e.github.user = auth.GitHubUser{Login: "octocat", ID: 1}

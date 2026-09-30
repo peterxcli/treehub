@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file treehub/v1/api.proto.
  */
 export const file_treehub_v1_api: GenFile = /*@__PURE__*/
-  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiKQoWUmVmcmVzaFNlc3Npb25SZXNwb25zZRIPCgdzZXNzaW9uGAEgASgJIiwKCEJvb2ttYXJrEgwKBHJlcG8YASABKAkSEgoKY3JlYXRlZF9hdBgCIAEoCSJAChVMaXN0Qm9va21hcmtzUmVzcG9uc2USJwoJYm9va21hcmtzGAEgAygLMhQudHJlZWh1Yi52MS5Cb29rbWFyayKFAQoJUXVldWVJdGVtEgwKBHJlcG8YASABKAkSDgoGbnVtYmVyGAIgASgFEhIKBXRpdGxlGAMgASgJSACIAQESEAoIYWRkZWRfYXQYBCABKAkSGQoMbGFzdF9zZWVuX2F0GAUgASgJSAGIAQFCCAoGX3RpdGxlQg8KDV9sYXN0X3NlZW5fYXQiOQoRTGlzdFF1ZXVlUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS50cmVlaHViLnYxLlF1ZXVlSXRlbSIzChNQdXRRdWV1ZUl0ZW1SZXF1ZXN0EhIKBXRpdGxlGAEgASgJSACIAQFCCAoGX3RpdGxlIkAKDUVycm9yUmVzcG9uc2USDQoFZXJyb3IYASABKAkSFAoHbWVzc2FnZRgCIAEoCUgAiAEBQgoKCF9tZXNzYWdlIhgKCk9rUmVzcG9uc2USCgoCb2sYASABKAginAEKC0hpc3RvcnlJdGVtEgwKBGtpbmQYASABKAkSDAoEcmVwbxgCIAEoCRIOCgZudW1iZXIYAyABKAUSEgoFdGl0bGUYBCABKAlIAIgBARIXCg9maXJzdF92aWV3ZWRfYXQYBSABKAkSFgoObGFzdF92aWV3ZWRfYXQYBiABKAkSEgoKdmlld19jb3VudBgHIAEoBUIICgZfdGl0bGUiZwoTTGlzdEhpc3RvcnlSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLnRyZWVodWIudjEuSGlzdG9yeUl0ZW0SGAoLbmV4dF9jdXJzb3IYAiABKAlIAIgBAUIOCgxfbmV4dF9jdXJzb3IiMQoRUmVjb3JkVmlld1JlcXVlc3QSEgoFdGl0bGUYASABKAlIAIgBAUIICgZfdGl0bGUiWQoSUmVjb3JkVmlld1Jlc3BvbnNlEioKBGl0ZW0YASABKAsyFy50cmVlaHViLnYxLkhpc3RvcnlJdGVtSACIAQESDgoGcGF1c2VkGAIgASgIQgcKBV9pdGVtIjkKD0hpc3RvcnlTZXR0aW5ncxIWCg5yZXRlbnRpb25fZGF5cxgBIAEoBRIOCgZwYXVzZWQYAiABKAhCQVo/Z2l0aHViLmNvbS9wZXRlcnhjbGkvdHJlZWh1Yi9zZXJ2ZXIvZ2VuL2dvL3RyZWVodWIvdjE7dHJlZWh1YnYxYgZwcm90bzM");
+  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiKQoWUmVmcmVzaFNlc3Npb25SZXNwb25zZRIPCgdzZXNzaW9uGAEgASgJIjIKGVJlZnJlc2hHaXRIdWJUb2tlblJlcXVlc3QSFQoNcmVmcmVzaF90b2tlbhgBIAEoCSK9AQoLR2l0SHViVG9rZW4SFAoMYWNjZXNzX3Rva2VuGAEgASgJEhcKCmV4cGlyZXNfYXQYAiABKAlIAIgBARIaCg1yZWZyZXNoX3Rva2VuGAMgASgJSAGIAQESJQoYcmVmcmVzaF90b2tlbl9leHBpcmVzX2F0GAQgASgJSAKIAQFCDQoLX2V4cGlyZXNfYXRCEAoOX3JlZnJlc2hfdG9rZW5CGwoZX3JlZnJlc2hfdG9rZW5fZXhwaXJlc19hdCIsCghCb29rbWFyaxIMCgRyZXBvGAEgASgJEhIKCmNyZWF0ZWRfYXQYAiABKAkiQAoVTGlzdEJvb2ttYXJrc1Jlc3BvbnNlEicKCWJvb2ttYXJrcxgBIAMoCzIULnRyZWVodWIudjEuQm9va21hcmsihQEKCVF1ZXVlSXRlbRIMCgRyZXBvGAEgASgJEg4KBm51bWJlchgCIAEoBRISCgV0aXRsZRgDIAEoCUgAiAEBEhAKCGFkZGVkX2F0GAQgASgJEhkKDGxhc3Rfc2Vlbl9hdBgFIAEoCUgBiAEBQggKBl90aXRsZUIPCg1fbGFzdF9zZWVuX2F0IjkKEUxpc3RRdWV1ZVJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUudHJlZWh1Yi52MS5RdWV1ZUl0ZW0iMwoTUHV0UXVldWVJdGVtUmVxdWVzdBISCgV0aXRsZRgBIAEoCUgAiAEBQggKBl90aXRsZSJACg1FcnJvclJlc3BvbnNlEg0KBWVycm9yGAEgASgJEhQKB21lc3NhZ2UYAiABKAlIAIgBAUIKCghfbWVzc2FnZSIYCgpPa1Jlc3BvbnNlEgoKAm9rGAEgASgIIpwBCgtIaXN0b3J5SXRlbRIMCgRraW5kGAEgASgJEgwKBHJlcG8YAiABKAkSDgoGbnVtYmVyGAMgASgFEhIKBXRpdGxlGAQgASgJSACIAQESFwoPZmlyc3Rfdmlld2VkX2F0GAUgASgJEhYKDmxhc3Rfdmlld2VkX2F0GAYgASgJEhIKCnZpZXdfY291bnQYByABKAVCCAoGX3RpdGxlImcKE0xpc3RIaXN0b3J5UmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy50cmVlaHViLnYxLkhpc3RvcnlJdGVtEhgKC25leHRfY3Vyc29yGAIgASgJSACIAQFCDgoMX25leHRfY3Vyc29yIjEKEVJlY29yZFZpZXdSZXF1ZXN0EhIKBXRpdGxlGAEgASgJSACIAQFCCAoGX3RpdGxlIlkKElJlY29yZFZpZXdSZXNwb25zZRIqCgRpdGVtGAEgASgLMhcudHJlZWh1Yi52MS5IaXN0b3J5SXRlbUgAiAEBEg4KBnBhdXNlZBgCIAEoCEIHCgVfaXRlbSI5Cg9IaXN0b3J5U2V0dGluZ3MSFgoOcmV0ZW50aW9uX2RheXMYASABKAUSDgoGcGF1c2VkGAIgASgIQkFaP2dpdGh1Yi5jb20vcGV0ZXJ4Y2xpL3RyZWVodWIvc2VydmVyL2dlbi9nby90cmVlaHViL3YxO3RyZWVodWJ2MWIGcHJvdG8z");
 
 /**
  * A GitHub user signed in to TreeHub. The GitHub handle (login) identifies the user.
@@ -161,6 +161,114 @@ export const RefreshSessionResponseSchema: GenMessage<RefreshSessionResponse, {j
   messageDesc(file_treehub_v1_api, 2);
 
 /**
+ * Renews an expiring GitHub token (POST /api/github/token). The GitHub OAuth App can make its tokens expire (8 hours,
+ * renewed with a refresh token valid for 6 months): the extension renews them through the server, which has the
+ * app's client secret. The tokens only pass through the server.
+ *
+ * @generated from message treehub.v1.RefreshGitHubTokenRequest
+ */
+export type RefreshGitHubTokenRequest = Message<"treehub.v1.RefreshGitHubTokenRequest"> & {
+  /**
+   * @generated from field: string refresh_token = 1;
+   */
+  refreshToken: string;
+};
+
+/**
+ * Renews an expiring GitHub token (POST /api/github/token). The GitHub OAuth App can make its tokens expire (8 hours,
+ * renewed with a refresh token valid for 6 months): the extension renews them through the server, which has the
+ * app's client secret. The tokens only pass through the server.
+ *
+ * @generated from message treehub.v1.RefreshGitHubTokenRequest
+ */
+export type RefreshGitHubTokenRequestJson = {
+  /**
+   * @generated from field: string refresh_token = 1;
+   */
+  refreshToken?: string;
+};
+
+/**
+ * Describes the message treehub.v1.RefreshGitHubTokenRequest.
+ * Use `create(RefreshGitHubTokenRequestSchema)` to create a new message.
+ */
+export const RefreshGitHubTokenRequestSchema: GenMessage<RefreshGitHubTokenRequest, {jsonType: RefreshGitHubTokenRequestJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 3);
+
+/**
+ * A GitHub token of the signed-in user, from renewing one (at sign-in, the same fields come in the redirect).
+ *
+ * @generated from message treehub.v1.GitHubToken
+ */
+export type GitHubToken = Message<"treehub.v1.GitHubToken"> & {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken: string;
+
+  /**
+   * RFC 3339; absent: the token doesn't expire
+   *
+   * @generated from field: optional string expires_at = 2;
+   */
+  expiresAt?: string | undefined;
+
+  /**
+   * replaces the one used to renew
+   *
+   * @generated from field: optional string refresh_token = 3;
+   */
+  refreshToken?: string | undefined;
+
+  /**
+   * RFC 3339
+   *
+   * @generated from field: optional string refresh_token_expires_at = 4;
+   */
+  refreshTokenExpiresAt?: string | undefined;
+};
+
+/**
+ * A GitHub token of the signed-in user, from renewing one (at sign-in, the same fields come in the redirect).
+ *
+ * @generated from message treehub.v1.GitHubToken
+ */
+export type GitHubTokenJson = {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken?: string;
+
+  /**
+   * RFC 3339; absent: the token doesn't expire
+   *
+   * @generated from field: optional string expires_at = 2;
+   */
+  expiresAt?: string;
+
+  /**
+   * replaces the one used to renew
+   *
+   * @generated from field: optional string refresh_token = 3;
+   */
+  refreshToken?: string;
+
+  /**
+   * RFC 3339
+   *
+   * @generated from field: optional string refresh_token_expires_at = 4;
+   */
+  refreshTokenExpiresAt?: string;
+};
+
+/**
+ * Describes the message treehub.v1.GitHubToken.
+ * Use `create(GitHubTokenSchema)` to create a new message.
+ */
+export const GitHubTokenSchema: GenMessage<GitHubToken, {jsonType: GitHubTokenJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 4);
+
+/**
  * A bookmarked repository.
  *
  * @generated from message treehub.v1.Bookmark
@@ -207,7 +315,7 @@ export type BookmarkJson = {
  * Use `create(BookmarkSchema)` to create a new message.
  */
 export const BookmarkSchema: GenMessage<Bookmark, {jsonType: BookmarkJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 3);
+  messageDesc(file_treehub_v1_api, 5);
 
 /**
  * @generated from message treehub.v1.ListBookmarksResponse
@@ -238,7 +346,7 @@ export type ListBookmarksResponseJson = {
  * Use `create(ListBookmarksResponseSchema)` to create a new message.
  */
 export const ListBookmarksResponseSchema: GenMessage<ListBookmarksResponse, {jsonType: ListBookmarksResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 4);
+  messageDesc(file_treehub_v1_api, 6);
 
 /**
  * A pull request in the user's review queue. Its statuses are computed by the extension
@@ -327,7 +435,7 @@ export type QueueItemJson = {
  * Use `create(QueueItemSchema)` to create a new message.
  */
 export const QueueItemSchema: GenMessage<QueueItem, {jsonType: QueueItemJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 5);
+  messageDesc(file_treehub_v1_api, 7);
 
 /**
  * @generated from message treehub.v1.ListQueueResponse
@@ -358,7 +466,7 @@ export type ListQueueResponseJson = {
  * Use `create(ListQueueResponseSchema)` to create a new message.
  */
 export const ListQueueResponseSchema: GenMessage<ListQueueResponse, {jsonType: ListQueueResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 6);
+  messageDesc(file_treehub_v1_api, 8);
 
 /**
  * @generated from message treehub.v1.PutQueueItemRequest
@@ -385,7 +493,7 @@ export type PutQueueItemRequestJson = {
  * Use `create(PutQueueItemRequestSchema)` to create a new message.
  */
 export const PutQueueItemRequestSchema: GenMessage<PutQueueItemRequest, {jsonType: PutQueueItemRequestJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 7);
+  messageDesc(file_treehub_v1_api, 9);
 
 /**
  * @generated from message treehub.v1.ErrorResponse
@@ -426,7 +534,7 @@ export type ErrorResponseJson = {
  * Use `create(ErrorResponseSchema)` to create a new message.
  */
 export const ErrorResponseSchema: GenMessage<ErrorResponse, {jsonType: ErrorResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 8);
+  messageDesc(file_treehub_v1_api, 10);
 
 /**
  * @generated from message treehub.v1.OkResponse
@@ -453,7 +561,7 @@ export type OkResponseJson = {
  * Use `create(OkResponseSchema)` to create a new message.
  */
 export const OkResponseSchema: GenMessage<OkResponse, {jsonType: OkResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 9);
+  messageDesc(file_treehub_v1_api, 11);
 
 /**
  * A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
@@ -570,7 +678,7 @@ export type HistoryItemJson = {
  * Use `create(HistoryItemSchema)` to create a new message.
  */
 export const HistoryItemSchema: GenMessage<HistoryItem, {jsonType: HistoryItemJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 10);
+  messageDesc(file_treehub_v1_api, 12);
 
 /**
  * @generated from message treehub.v1.ListHistoryResponse
@@ -615,7 +723,7 @@ export type ListHistoryResponseJson = {
  * Use `create(ListHistoryResponseSchema)` to create a new message.
  */
 export const ListHistoryResponseSchema: GenMessage<ListHistoryResponse, {jsonType: ListHistoryResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 11);
+  messageDesc(file_treehub_v1_api, 13);
 
 /**
  * @generated from message treehub.v1.RecordViewRequest
@@ -642,7 +750,7 @@ export type RecordViewRequestJson = {
  * Use `create(RecordViewRequestSchema)` to create a new message.
  */
 export const RecordViewRequestSchema: GenMessage<RecordViewRequest, {jsonType: RecordViewRequestJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 12);
+  messageDesc(file_treehub_v1_api, 14);
 
 /**
  * @generated from message treehub.v1.RecordViewResponse
@@ -683,7 +791,7 @@ export type RecordViewResponseJson = {
  * Use `create(RecordViewResponseSchema)` to create a new message.
  */
 export const RecordViewResponseSchema: GenMessage<RecordViewResponse, {jsonType: RecordViewResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 13);
+  messageDesc(file_treehub_v1_api, 15);
 
 /**
  * @generated from message treehub.v1.HistorySettings
@@ -728,5 +836,5 @@ export type HistorySettingsJson = {
  * Use `create(HistorySettingsSchema)` to create a new message.
  */
 export const HistorySettingsSchema: GenMessage<HistorySettings, {jsonType: HistorySettingsJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 14);
+  messageDesc(file_treehub_v1_api, 16);
 

@@ -68,9 +68,18 @@ class TreeHubService {
   async _getAccessToken() {
     const token = await window.extStore.get(window.STORE.TOKEN);
     if (token) return token;
-    // Signed in to TreeHub (see view.hub.js): the token GitHub gave when signing in
+    // Signed in to TreeHub (see view.hub.js): the token GitHub gave when signing in. GitHub may make it expire (an
+    // option of the OAuth App: 8 hours); past half its lifetime, the background worker renews it.
     const auth = await window.extStore.get('treehub.auth');
-    return (auth && auth.githubToken) || token;
+    if (!auth || !auth.githubToken) return token;
+    const due = auth.githubRefreshToken && auth.githubTokenExpiresAt &&
+      pastHalfLife(auth.githubTokenIssuedAt || auth.signedInAt, auth.githubTokenExpiresAt);
+    if (!due) return auth.githubToken;
+    try {
+      return (await sendToBackground({type: 'treehub:githubToken'})) || auth.githubToken;
+    } catch (err) {
+      return auth.githubToken;
+    }
   }
 
   _getInvalidTokenMessage({responseStatus, requestHeaders}) {

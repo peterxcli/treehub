@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	treehubv1 "github.com/peterxcli/treehub/server/gen/go/treehub/v1"
 	"github.com/peterxcli/treehub/server/internal/auth"
@@ -128,7 +129,7 @@ func (s *Server) handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		fail("exchange")
 		return
 	}
-	gh, err := s.GitHub.User(ctx, token)
+	gh, err := s.GitHub.User(ctx, token.AccessToken)
 	if err != nil {
 		log.Printf("oauth user: %v", err)
 		fail("user")
@@ -140,7 +141,70 @@ func (s *Server) handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		fail("internal")
 		return
 	}
-	redirect(w, extensionURL(st.Ext, "session", session, "github_token", token, "login", u.Login, "nonce", st.Nonce))
+	kv := []string{"session", session, "github_token", token.AccessToken}
+	// An expiring token (an option of the OAuth App): when it expires, and how to renew it (see refreshGitHubToken)
+	if t := githubTokenProto(token, s.now()); t.ExpiresAt != nil {
+		kv = append(kv, "github_expires_at", *t.ExpiresAt)
+		if t.RefreshToken != nil {
+			kv = append(kv, "github_refresh_token", *t.RefreshToken, "github_refresh_expires_at", t.GetRefreshTokenExpiresAt())
+		}
+	}
+	redirect(w, extensionURL(st.Ext, append(kv, "login", u.Login, "nonce", st.Nonce)...))
+}
+
+// refreshGitHubToken handles POST /api/github/token: renews the user's expiring
+// GitHub token with its refresh token, which needs the OAuth App's client
+// secret. The tokens only pass through the server, to the extension, like at
+// sign-in; the new token must belong to the signed-in user.
+func (s *Server) refreshGitHubToken(r *http.Request) (any, error) {
+	var body treehubv1.RefreshGitHubTokenRequest
+	if err := readJSON(r, &body); err != nil {
+		return nil, badRequest("invalid_body", err)
+	}
+	if body.RefreshToken == "" {
+		return nil, badRequest("invalid_body", errors.New("refresh_token is required"))
+	}
+	if !s.GitHub.Configured() {
+		return nil, &HTTPError{Status: http.StatusInternalServerError, Code: "oauth_not_configured"}
+	}
+	ctx := r.Context()
+	token, err := s.GitHub.Refresh(ctx, body.RefreshToken)
+	if errors.Is(err, auth.ErrBadRefreshToken) {
+		return nil, &HTTPError{Status: http.StatusBadRequest, Code: "github_refresh_refused",
+			Cause: errors.New("GitHub refused to renew the token: sign in again")}
+	}
+	if err != nil {
+		return nil, err
+	}
+	gh, err := s.GitHub.User(ctx, token.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+	if gh.ID != userFrom(ctx).GithubID {
+		return nil, &HTTPError{Status: http.StatusForbidden, Code: "github_user_mismatch",
+			Cause: errors.New("the token belongs to another GitHub account")}
+	}
+	return githubTokenProto(token, s.now()), nil
+}
+
+// githubTokenProto gives the expiry of a token and of its refresh token as
+// times (RFC 3339), which the extension compares with its clock.
+func githubTokenProto(t *auth.Token, now time.Time) *treehubv1.GitHubToken {
+	at := func(s int64) *string {
+		v := now.Add(time.Duration(s) * time.Second).UTC().Format(time.RFC3339)
+		return &v
+	}
+	res := &treehubv1.GitHubToken{AccessToken: t.AccessToken}
+	if t.ExpiresIn > 0 {
+		res.ExpiresAt = at(int64(t.ExpiresIn))
+	}
+	if t.RefreshToken != "" {
+		res.RefreshToken = &t.RefreshToken
+		if t.RefreshTokenExpiresIn > 0 {
+			res.RefreshTokenExpiresAt = at(int64(t.RefreshTokenExpiresIn))
+		}
+	}
+	return res
 }
 
 // handleDevLogin is local development only: sign in as any handle without

@@ -96,6 +96,7 @@ func (s *Server) Handler() http.Handler {
 	rt.handle("DELETE", "/api/me", s.authed(jsonEndpoint(s.deleteMe)))
 	rt.handle("POST", "/api/logout-all", s.authed(jsonEndpoint(s.logoutAll)))
 	rt.handle("POST", "/api/session/refresh", s.authed(jsonEndpoint(s.refreshSession)))
+	rt.handle("POST", "/api/github/token", s.authed(jsonEndpoint(s.refreshGitHubToken)))
 
 	rt.handle("GET", "/api/bookmarks", s.authed(jsonEndpoint(s.listBookmarks)))
 	rt.handle("PUT", "/api/bookmarks/{owner}/{name}", s.authed(jsonEndpoint(s.putBookmark)))

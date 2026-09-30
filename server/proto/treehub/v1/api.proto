@@ -31,6 +31,21 @@ message RefreshSessionResponse {
   string session = 1;
 }
 
+// Renews an expiring GitHub token (POST /api/github/token). The GitHub OAuth App can make its tokens expire (8 hours,
+// renewed with a refresh token valid for 6 months): the extension renews them through the server, which has the
+// app's client secret. The tokens only pass through the server.
+message RefreshGitHubTokenRequest {
+  string refresh_token = 1;
+}
+
+// A GitHub token of the signed-in user, from renewing one (at sign-in, the same fields come in the redirect).
+message GitHubToken {
+  string access_token = 1;
+  optional string expires_at = 2; // RFC 3339; absent: the token doesn't expire
+  optional string refresh_token = 3; // replaces the one used to renew
+  optional string refresh_token_expires_at = 4; // RFC 3339
+}
+
 // A bookmarked repository.
 message Bookmark {
   string repo = 1; // "owner/name"
