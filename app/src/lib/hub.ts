@@ -88,15 +88,15 @@ async function backend<T>(request: Promise<T>): Promise<T> {
   } catch (err) {
     if (err instanceof ApiError && err.isAuthError) {
       const {auth} = await load();
+      // Signed out already, e.g. by another request refused at the same time: keep the explanation it saved
+      if (!auth) throw err;
       const {method, url, serverMessage} = err.request || {};
-      const problem = auth
-        ? explainCredentialProblem(
-            {service: 'treehub', status: 401, method, url, message: serverMessage},
-            {source: 'signin', login: auth.account.login, session: auth.session}
-          )
-        : null;
+      const problem = explainCredentialProblem(
+        {service: 'treehub', status: 401, method, url, message: serverMessage},
+        {source: 'signin', login: auth.account.login, session: auth.session}
+      );
       await clearAccount(problem);
-      if (problem) throw Object.assign(err, {problem});
+      throw Object.assign(err, {problem});
     }
     throw err;
   }
