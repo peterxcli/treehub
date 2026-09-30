@@ -4,6 +4,8 @@
  * Google Cloud service account.
  *
  *   node scripts/publish-chrome.js [dist/chrome.zip]   upload and submit for review
+ *   node scripts/publish-chrome.js --upload-only [zip] upload without submitting, e.g. to fill the justifications
+ *                                                      of new permissions in the Developer Dashboard first
  *   node scripts/publish-chrome.js --status            only print the status of the item (read-only)
  *
  * Environment:
@@ -113,6 +115,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function main() {
   const args = process.argv.slice(2);
   const statusOnly = args.includes('--status');
+  const uploadOnly = args.includes('--upload-only');
   const zip = args.find((arg) => !arg.startsWith('--')) || 'dist/chrome.zip';
 
   const item = `${API}/v2/publishers/${env('CWS_PUBLISHER_ID')}/items/${env('CWS_EXTENSION_ID')}`;
@@ -141,6 +144,10 @@ async function main() {
     throw new Error(`The upload did not succeed (${uploadState}). See the item in the Developer Dashboard.`);
   }
   console.log(`Uploaded${upload.crxVersion ? ` version ${upload.crxVersion}` : ''}`);
+  if (uploadOnly) {
+    console.log('Not submitted: submit it in the Developer Dashboard, or run this script without --upload-only.');
+    return;
+  }
 
   const result = await call('POST', `${item}:publish`, token,
     JSON.stringify({publishType: 'DEFAULT_PUBLISH'}), 'application/json');
