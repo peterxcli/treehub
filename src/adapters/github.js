@@ -18,7 +18,7 @@ const GH_REVIEW_THREADS_QUERY = `
           nodes {
             isResolved isOutdated path line originalLine startLine diffSide
             comments(first: 100) {
-              nodes { databaseId bodyText createdAt author { login } }
+              nodes { databaseId bodyText bodyHTML createdAt author { login } }
             }
           }
         }
@@ -45,7 +45,7 @@ const GH_ADD_REVIEW_THREAD_MUTATION = `
       pullRequestReviewId: $reviewId, path: $path, body: $body, line: $line, side: $side,
       startLine: $startLine, startSide: $startSide, subjectType: $subjectType
     }) {
-      thread { comments(last: 1) { nodes { databaseId author { login } } } }
+      thread { comments(last: 1) { nodes { databaseId author { login } bodyHTML } } }
     }
   }`;
 
@@ -608,7 +608,8 @@ class GitHub extends Adapter {
    *   are set for a comment on several lines (from startLine to line).
    * @param {boolean} asReview whether to add the comment to the pending review (created if needed)
    *   instead of publishing it right away.
-   * @return {!Promise<{id: number, author: string, pending: boolean}>}
+   * @return {!Promise<{id: number, author: string, pending: boolean, html: string=}>} html is the comment as GitHub
+   *   renders it, when GitHub tells
    */
   async addReviewComment(repo, token, {path, line, side, startLine, startSide, body, commitId}, asReview) {
     const opts = {repo, token};
@@ -618,9 +619,11 @@ class GitHub extends Adapter {
     if (!asReview) {
       const {data} = await this._api(`/pulls/${repo.pullNumber}/comments`, opts, {
         method: 'POST',
-        data: Object.assign({body, commit_id: commitId}, target)
+        data: Object.assign({body, commit_id: commitId}, target),
+        // With body_html
+        accept: 'application/vnd.github.full+json'
       });
-      return {id: data.id, author: data.user && data.user.login, pending: false};
+      return {id: data.id, author: data.user && data.user.login, pending: false, html: data.body_html};
     }
 
     let pendingReview = await this.getPendingReview(repo, token);
@@ -649,7 +652,22 @@ class GitHub extends Adapter {
       throw {message: line ? `GitHub couldn't add a comment to line ${line}.` : 'GitHub couldn\'t add the comment.'};
     }
     const comment = thread.comments.nodes[0];
-    return {id: comment.databaseId, author: comment.author && comment.author.login, pending: true};
+    const author = comment.author && comment.author.login;
+    return {id: comment.databaseId, author, pending: true, html: comment.bodyHTML};
+  }
+
+  /**
+   * Renders Markdown as GitHub does in the comments of a repository: GitHub Flavored Markdown, with links to its
+   * issues, pull requests and users.
+   * @return {!Promise<string>} HTML, sanitized by GitHub
+   */
+  async renderMarkdown(repo, token, text) {
+    const {data} = await this._api(`${GH_API}/markdown`, {repo, token}, {
+      method: 'POST',
+      data: {text, mode: 'gfm', context: `${repo.username}/${repo.reponame}`},
+      dataType: 'text'
+    });
+    return data;
   }
 
   /**
@@ -675,6 +693,8 @@ class GitHub extends Adapter {
               id: comment.databaseId,
               author: comment.author ? comment.author.login : 'ghost',
               body: comment.bodyText,
+              // As GitHub renders it (sanitized by GitHub)
+              html: comment.bodyHTML,
               createdAt: comment.createdAt
             }));
             return {
@@ -907,9 +927,8 @@ class GitHub extends Adapter {
         .done((res, textStatus, jqXHR) => resolve({data: res, jqXHR}))
         .fail((jqXHR) => this._handleError(cfg, jqXHR, (err) => {
           // Keep the API's own message (e.g. validation errors), it's more useful than the generic one
-          const apiMessage = jqXHR.responseJSON && jqXHR.responseJSON.message;
-          const details = jqXHR.responseJSON && jqXHR.responseJSON.errors;
-          reject(Object.assign(err, {apiMessage, details}));
+          const json = errorJson(jqXHR);
+          reject(Object.assign(err, {apiMessage: json && json.message, details: json && json.errors}));
         }));
     });
   }

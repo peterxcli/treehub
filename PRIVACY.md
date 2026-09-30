@@ -9,7 +9,7 @@ TreeHub is a browser extension that adds a code tree, pull request review tools,
 - **GitHub access token (optional).** If you enter a personal access token in TreeHub's settings, it is stored in your browser's extension storage on your device. It is sent only to GitHub (`api.github.com`), to authenticate the requests TreeHub makes on your behalf.
 - **Settings.** Your preferences (for example the sidebar width, docking side, hotkeys and pull request filter) are stored in your browser's extension storage on your device.
 - **GitHub page content.** TreeHub reads the GitHub page you are viewing, inside your browser, to know which repository, branch, pull request or commit to show and which files you marked as viewed. It is not sent anywhere.
-- **Requests to GitHub.** To show the code tree, pull request changes, review conversations, file contents and the list of pull requests, TreeHub requests them from GitHub, directly from your browser. Review comments you write in TreeHub are sent to GitHub only when you click a button to add them. GitHub's handling of these requests is covered by the [GitHub General Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+- **Requests to GitHub.** To show the code tree, pull request changes, review conversations, file contents and the list of pull requests, TreeHub requests them from GitHub, directly from your browser. Review comments you write in TreeHub are sent to GitHub only when you click a button to preview or add them. GitHub's handling of these requests is covered by the [GitHub General Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 
 Nothing is sent to the TreeHub server until you sign in.
 

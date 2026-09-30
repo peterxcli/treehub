@@ -54,8 +54,24 @@ function stripTags(html) {
   return String(html || '').replace(/<[^>]*>/g, '');
 }
 
+/**
+ * The JSON body of a failed response. GitHub's API answers errors in JSON, also to requests of text, which
+ * jQuery doesn't parse.
+ * @param {!Object} jqXHR
+ * @return {*} undefined if the body isn't JSON
+ */
+function errorJson(jqXHR) {
+  if (jqXHR.responseJSON !== undefined) return jqXHR.responseJSON;
+  try {
+    return JSON.parse(jqXHR.responseText);
+  } catch (err) {
+    return undefined;
+  }
+}
+
 window.isValidTimeStamp = isValidTimeStamp;
 window.timeAgo = timeAgo;
 window.sha256Hex = sha256Hex;
 window.escapeHtml = escapeHtml;
 window.stripTags = stripTags;
+window.errorJson = errorJson;

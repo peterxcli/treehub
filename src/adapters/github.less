@@ -1411,6 +1411,12 @@ html.treehub-ff-opened {
   margin-top: 2px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+
+  // Rendered by GitHub
+  &.markdown-body {
+    font-size: 14px;
+    white-space: normal;
+  }
 }
 
 .treehub-ff-thread-footer {
@@ -1452,6 +1458,145 @@ html.treehub-ff-opened {
     font-size: 12px;
   }
 
+  // The comment editor, like GitHub's: Write and Preview tabs, a toolbar, the text or its preview
+  .treehub-ff-editor {
+    border: 1px solid @border;
+    border-radius: 6px;
+    background-color: @bg;
+
+    &:focus-within {
+      border-color: var(--borderColor-accent-emphasis, #0969da);
+      box-shadow: inset 0 0 0 1px var(--borderColor-accent-emphasis, #0969da);
+    }
+
+    // The textarea is a block
+    [hidden] {
+      display: none !important;
+    }
+
+    textarea {
+      min-height: 100px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 0;
+      background-color: transparent;
+      box-shadow: none;
+      outline: none;
+      line-height: 1.5;
+    }
+  }
+
+  .treehub-ff-editor-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 8px 8px 0;
+    border-bottom: 1px solid @border;
+    border-radius: 6px 6px 0 0;
+    background-color: @bg-muted;
+  }
+
+  .treehub-ff-editor-tabs {
+    display: flex;
+    margin-bottom: -1px;
+  }
+
+  .treehub-ff-editor-tab {
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: @fg-muted;
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+
+    &:hover {
+      color: @fg;
+    }
+
+    &.selected {
+      border-color: @border;
+      border-bottom-color: @bg;
+      background-color: @bg;
+      color: @fg;
+    }
+  }
+
+  .treehub-ff-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: center;
+    gap: 2px;
+    padding: 0 0 8px 8px;
+  }
+
+  .treehub-ff-previewing .treehub-ff-toolbar {
+    visibility: hidden;
+  }
+
+  .treehub-ff-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: @fg-muted;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background-color: @bg-hover;
+      color: @fg;
+    }
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
+  .treehub-ff-toolbar-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background-color: @border;
+  }
+
+  .treehub-ff-preview {
+    min-height: 100px;
+    padding: 8px 12px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .treehub-ff-preview-note {
+    color: @fg-muted;
+  }
+
+  .treehub-ff-preview-error {
+    color: var(--fgColor-danger, #d1242f);
+  }
+
+  .treehub-ff-editor-foot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-top: 1px dashed @border-muted;
+    color: @fg-muted;
+    font-size: 12px;
+
+    svg {
+      fill: currentColor;
+    }
+  }
+
   .treehub-ff-form-error {
     margin-top: 6px;
     color: var(--fgColor-danger, #d1242f);
@@ -1467,6 +1612,35 @@ html.treehub-ff-opened {
     justify-content: flex-end;
     gap: 8px;
     margin-top: 8px;
+  }
+}
+
+// A suggestion in a rendered comment: the lines commented on and the suggested ones, as in the diff
+.treehub-ff-suggestion {
+  margin: 8px 0;
+  border: 1px solid @border;
+  border-radius: 6px;
+  overflow: hidden;
+
+  .treehub-ff-suggestion-title {
+    padding: 6px 8px;
+    border-bottom: 1px solid @border;
+    color: @fg-muted;
+    font-size: 12px;
+  }
+
+  // Not a table of Markdown
+  table.treehub-ff-table {
+    display: table;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    overflow: visible;
+
+    tr,
+    td {
+      border: 0;
+    }
   }
 }
 

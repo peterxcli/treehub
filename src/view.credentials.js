@@ -52,7 +52,7 @@ class CredentialsView {
     if (!url.startsWith('https://api.github.com/')) return;
 
     const token = ((settings.headers && settings.headers.Authorization) || '').replace(/^(token|bearer)\s+/i, '');
-    const json = jqXHR.responseJSON;
+    const json = jqXHR.status >= 400 ? errorJson(jqXHR) : jqXHR.responseJSON;
     // GraphQL refuses with HTTP 200: rate limits and SAML single sign-on
     const refusal = jqXHR.status === 200 && json && json.errors &&
       json.errors.find((error) => error.type === 'RATE_LIMITED' || error.type === 'FORBIDDEN');

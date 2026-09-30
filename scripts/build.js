@@ -39,6 +39,7 @@ const SRC_FILES = [
   'src/util.misc.js',
   'src/util.plugins.js',
   'src/util.diff.js',
+  'src/util.markdown.js',
   'src/util.icons.js',
   'src/util.context.js',
   'src/core.constants.js',

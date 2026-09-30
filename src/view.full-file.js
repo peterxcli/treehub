@@ -3,6 +3,24 @@ const FULL_FILE_OPEN_CLASS = 'treehub-ff-opened';
 // Don't syntax-highlight huge files, it would freeze the page
 const FULL_FILE_MAX_HIGHLIGHT = 1024 * 1024;
 const FULL_FILE_LANGUAGES = {dockerfile: 'dockerfile', makefile: 'makefile', 'cmakelists.txt': 'cmake'};
+const FULL_FILE_MOD = /Mac/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+// The toolbar of the comment editor, like GitHub's: [format, icon, label, shortcut key], null for a separator
+const FULL_FILE_TOOLS = [
+  ['heading', 'heading', 'Add heading text'],
+  ['bold', 'bold', 'Add bold text', 'b'],
+  ['italic', 'italic', 'Add italic text', 'i'],
+  ['quote', 'quote', 'Add a quote'],
+  ['code', 'code', 'Add code', 'e'],
+  ['link', 'link', 'Add a link', 'k'],
+  null,
+  ['ordered', 'listOrdered', 'Add a numbered list'],
+  ['unordered', 'listUnordered', 'Add a bulleted list'],
+  ['task', 'tasklist', 'Add a task list'],
+  null,
+  ['mention', 'mention', 'Directly mention a user or team'],
+  ['reference', 'crossReference', 'Reference an issue, pull request, or discussion']
+];
+const FULL_FILE_SHORTCUTS = {b: 'bold', i: 'italic', e: 'code', k: 'link'};
 
 /**
  * Adds a "View full" button to each diff of the pull request "Files changed" page. It opens a dialog
@@ -193,11 +211,27 @@ class FullFileView {
         this.close();
         if (!this.$modal) this.adapter.selectFile(href);
       })
-      .on('keydown', 'textarea', (event) => {
-        // Like the primary button: adds to the (private) pending review rather than publishing
-        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      .on('click', '.treehub-ff-editor-tab', (event) => {
+        this._showTab($(event.currentTarget).closest('tr'), event.currentTarget.dataset.tab);
+      })
+      .on('click', '.treehub-ff-tool', (event) => {
+        this._format($(event.currentTarget).closest('tr'), event.currentTarget.dataset.format);
+      })
+      .on('keydown', '.treehub-ff-editor', (event) => {
+        if (!(event.metaKey || event.ctrlKey)) return;
+        const $form = $(event.currentTarget).closest('tr');
+        const previewing = event.currentTarget.classList.contains('treehub-ff-previewing');
+        const key = event.key.toLowerCase();
+        if (key === 'enter') {
+          // Like the primary button: adds to the (private) pending review rather than publishing
           event.preventDefault();
-          this._submit($(event.currentTarget).closest('tr'), true);
+          this._submit($form, true);
+        } else if (key === 'p' && event.shiftKey) {
+          event.preventDefault();
+          this._showTab($form, previewing ? 'write' : 'preview');
+        } else if (FULL_FILE_SHORTCUTS[key] && !previewing && !event.shiftKey && !event.altKey) {
+          event.preventDefault();
+          this._format($form, FULL_FILE_SHORTCUTS[key]);
         }
       });
   }
@@ -275,6 +309,7 @@ class FullFileView {
     const $body = this.$modal.find('.treehub-ff-body');
     $body.html(`<table class="treehub-ff-table"><tbody>${html.join('')}</tbody></table>`);
     this._rows = rows;
+    this._code = code;
     this._selection = null;
     this.$selectionBar = $(
       '<div class="treehub-ff-selection" role="toolbar" aria-label="Selected lines" hidden>' +
@@ -324,7 +359,10 @@ class FullFileView {
           `<span>${timeAgo(comment.createdAt)}</span>` +
           (pending ? '<span class="treehub-ff-badge">Pending</span>' : '') +
           '</div>' +
-          `<div class="treehub-ff-comment-body">${escapeHtml(comment.body)}</div>` +
+          // GitHub's rendering when known (sanitized by GitHub), else the text
+          (comment.html
+            ? `<div class="treehub-ff-comment-body markdown-body">${comment.html}</div>`
+            : `<div class="treehub-ff-comment-body">${escapeHtml(comment.body)}</div>`) +
           '</div>'
       )
       .join('');
@@ -468,7 +506,7 @@ class FullFileView {
       `<tr class="treehub-ff-form-row" data-from="${from}" data-to="${to}">` +
       '<td colspan="3"><div class="treehub-ff-form">' +
       '<div class="treehub-ff-form-title"></div>' +
-      '<textarea class="form-control" rows="4" placeholder="Leave a comment"></textarea>' +
+      this._renderEditor(this._canSuggest(range)) +
       '<div class="treehub-ff-form-error"></div>' +
       '<div class="treehub-ff-form-actions">' +
       '<button type="button" class="btn btn-sm treehub-ff-cancel">Cancel</button>' +
@@ -529,10 +567,15 @@ class FullFileView {
         this.$modal.find('.treehub-ff-review').text('Add review comment');
       }
 
+      // As GitHub renders it: from GitHub's answer, else rendered like the preview
+      const html = this._showSuggestions(
+        result.html || (await this._renderMarkdown(comment.body).catch(() => '')),
+        $form
+      ) || null;
       const thread = {
         url: result.pending ? null : `/${repo.username}/${repo.reponame}/pull/${repo.pullNumber}/files#r${result.id}`,
         resolved: false,
-        comments: [{author: result.author || 'You', body: comment.body, createdAt: new Date().toISOString()}]
+        comments: [{author: result.author || 'You', body: comment.body, html, createdAt: new Date().toISOString()}]
       };
       this._removeForm($form, $(this._renderThread(thread, {pending: result.pending})));
 
@@ -544,6 +587,173 @@ class FullFileView {
       $buttons.prop('disabled', false);
       $form.removeClass('treehub-ff-form--busy');
     }
+  }
+
+  /**
+   * The comment editor, like GitHub's: Write and Preview tabs, and a formatting toolbar.
+   * @param {boolean} suggest whether to offer to suggest changes to the lines
+   */
+  _renderEditor(suggest) {
+    const tools = FULL_FILE_TOOLS.concat(suggest ? [null, ['suggestion', 'fileDiff', 'Insert a suggestion']] : [])
+      .map((tool) => {
+        if (!tool) return '<span class="treehub-ff-toolbar-sep"></span>';
+        const [format, icon, label, key] = tool;
+        const title = key ? `${label} (${FULL_FILE_MOD}${key.toUpperCase()})` : label;
+        return (
+          `<button type="button" class="treehub-ff-tool" data-format="${format}" aria-label="${label}" ` +
+          `title="${title}">${octicon(icon)}</button>`
+        );
+      })
+      .join('');
+    return (
+      '<div class="treehub-ff-editor">' +
+      '<div class="treehub-ff-editor-head">' +
+      '<div class="treehub-ff-editor-tabs" role="tablist">' +
+      '<button type="button" role="tab" class="treehub-ff-editor-tab selected" data-tab="write" ' +
+      'aria-selected="true">Write</button>' +
+      '<button type="button" role="tab" class="treehub-ff-editor-tab" data-tab="preview" aria-selected="false" ' +
+      `title="Preview (${FULL_FILE_MOD}Shift+P)">Preview</button>` +
+      '</div>' +
+      `<div class="treehub-ff-toolbar" role="toolbar" aria-label="Formatting">${tools}</div>` +
+      '</div>' +
+      '<textarea class="form-control" rows="4" placeholder="Leave a comment"></textarea>' +
+      '<div class="treehub-ff-preview markdown-body" hidden></div>' +
+      `<div class="treehub-ff-editor-foot">${octicon('markdown')}<span>Markdown is supported</span></div>` +
+      '</div>'
+    );
+  }
+
+  /** GitHub suggests changes to lines of the file after the change, in the diff. */
+  _canSuggest(range) {
+    const target = range.comment;
+    return !!target && target.side === 'RIGHT' && (!target.startLine || target.startSide === 'RIGHT');
+  }
+
+  /** Applies a format of the toolbar to the selection of the form's text. */
+  _format($form, format) {
+    if ($form.find('.treehub-ff-editor').hasClass('treehub-ff-previewing')) this._showTab($form, 'write');
+    const textarea = $form.find('textarea')[0];
+    const suggestion = format === 'suggestion'
+      ? this._suggestedRows($form).map((index) => this._rows[index].text).join('\n')
+      : undefined;
+    const edit = formatMarkdown(textarea.value, textarea.selectionStart, textarea.selectionEnd, format, suggestion);
+
+    textarea.focus();
+    textarea.setSelectionRange(edit.from, edit.to);
+    // As if typed, so that the browser can undo it
+    document.execCommand(edit.text ? 'insertText' : 'delete', false, edit.text);
+    textarea.setSelectionRange(edit.selectionStart, edit.selectionEnd);
+  }
+
+  /** Shows the Write or the Preview tab of a form's editor. */
+  async _showTab($form, tab) {
+    const $editor = $form.find('.treehub-ff-editor');
+    const previewing = tab === 'preview';
+    $editor.toggleClass('treehub-ff-previewing', previewing);
+    $editor.find('.treehub-ff-editor-tab').each((index, el) => {
+      el.classList.toggle('selected', el.dataset.tab === tab);
+      el.setAttribute('aria-selected', String(el.dataset.tab === tab));
+    });
+
+    const $textarea = $editor.find('textarea');
+    const $preview = $editor.find('.treehub-ff-preview');
+    if (!previewing) {
+      $preview.prop('hidden', true);
+      $textarea.prop('hidden', false).focus();
+      return;
+    }
+
+    // Same height as the text, so that the page doesn't jump
+    $preview.css('min-height', $textarea.outerHeight());
+    $textarea.prop('hidden', true);
+    $preview.prop('hidden', false);
+    $editor.find('.treehub-ff-editor-tab[data-tab="preview"]').focus();
+
+    const text = $textarea.val();
+    if (!text.trim()) {
+      $preview.html('<p class="treehub-ff-preview-note">Nothing to preview</p>');
+      return;
+    }
+    $preview.html('<p class="treehub-ff-preview-note">Loading preview…</p>');
+    try {
+      const html = this._showSuggestions(await this._renderMarkdown(text), $form);
+      // Unless the user went back to writing meanwhile
+      if ($editor.hasClass('treehub-ff-previewing') && $textarea.val() === text) $preview.html(html);
+    } catch (err) {
+      $preview.empty().append($('<p class="treehub-ff-preview-note treehub-ff-preview-error"></p>').text(
+        `Cannot preview: ${this._describeError(err)}`
+      ));
+    }
+  }
+
+  /**
+   * GitHub's rendering of Markdown in this repository, remembered for the last texts (e.g. switching tabs).
+   * @return {!Promise<string>}
+   */
+  _renderMarkdown(text) {
+    const {repo, token} = this._context;
+    // References such as #12 depend on the repository
+    const key = `${repo.username}/${repo.reponame}\n${text}`;
+    const cache = (this._markdownCache = this._markdownCache || new Map());
+    if (!cache.has(key)) {
+      const promise = this.adapter.renderMarkdown(repo, token, text);
+      cache.set(key, promise);
+      promise.catch(() => cache.delete(key));
+      if (cache.size > 20) cache.delete(cache.keys().next().value);
+    }
+    return cache.get(key);
+  }
+
+  /**
+   * The rows a suggestion of a form replaces: its lines of the file after the change.
+   * @return {!Array<number>} indexes of this._rows
+   */
+  _suggestedRows($form) {
+    const indexes = [];
+    for (let index = +$form.attr('data-from'); index <= +$form.attr('data-to'); index++) {
+      const {type} = this._rows[index];
+      if (type !== 'del' && type !== 'hunk') indexes.push(index);
+    }
+    return indexes;
+  }
+
+  /**
+   * Shows the suggestions of a form's rendered comment as GitHub does: its lines replaced by the suggested
+   * ones. GitHub's Markdown API renders them as code blocks.
+   * @param {string} html
+   * @return {string}
+   */
+  _showSuggestions(html, $form) {
+    if (!html.includes('lang="suggestion"') || !this._canSuggest($form.data('range'))) return html;
+    const indexes = this._suggestedRows($form);
+    if (!indexes.length) return html;
+    const firstLine = this._rows[indexes[0]].newNo;
+    const row = (type, line, code) =>
+      `<tr class="treehub-ff-${type}"><td class="treehub-ff-num">${line}</td><td class="treehub-ff-code">` +
+      `<span class="treehub-ff-marker">${type === 'add' ? '+' : '-'}</span>${code}</td></tr>`;
+
+    // A template doesn't load or run anything of its content
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    template.content.querySelectorAll('pre[lang="suggestion"]').forEach((pre) => {
+      // No line removes the lines
+      const text = pre.textContent;
+      const lines = text ? text.replace(/\n$/, '').split('\n') : [];
+      const code = this._highlight(
+        this._context.file.filename,
+        null,
+        lines.map((line) => ({type: 'add', text: line}))
+      );
+      const $block = $(
+        '<div class="treehub-ff-suggestion"><div class="treehub-ff-suggestion-title">Suggested change</div>' +
+        '<table class="treehub-ff-table"><tbody>' +
+        indexes.map((index) => row('del', this._rows[index].newNo, this._code[index])).join('') +
+        lines.map((line, i) => row('add', firstLine + i, code[i])).join('') +
+        '</tbody></table></div>'
+      );
+      pre.replaceWith($block[0]);
+    });
+    return template.innerHTML;
   }
 
   _describeError(err) {
