@@ -57,18 +57,21 @@ class ExtStore {
     }, 50);
   }
 
-  // Public
+  // Public. Once the extension is updated or reloaded, calls never settle: see util.context.js
   async set(key, value) {
+    if (!isExtensionContextValid()) return whenExtensionContextLost();
     if (this._init) await this._init;
     return this._innerSet(key, value);
   }
 
   async get(key) {
+    if (!isExtensionContextValid()) return whenExtensionContextLost();
     if (this._init) await this._init;
     return this._innerGet(key);
   }
 
   async remove(key) {
+    if (!isExtensionContextValid()) return whenExtensionContextLost();
     if (this._init) await this._init;
     return this._innerRemove(key);
   }

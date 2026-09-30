@@ -208,6 +208,7 @@ class HubView {
 
   /** Sends a request (app/src/lib/messages.ts) to the background worker and returns its result. */
   _send(request) {
+    if (!isExtensionContextValid()) return whenExtensionContextLost();
     return new Promise((resolve, reject) => {
       const noReply = () => reject(new Error('TreeHub did not respond. Please reload this page.'));
       try {
@@ -217,8 +218,8 @@ class HubView {
           else reject(new Error(reply.error));
         });
       } catch (err) {
-        // The extension was reloaded or updated after this page loaded
-        reject(new Error('TreeHub was updated. Please reload this page.'));
+        // The extension was reloaded or updated just now
+        whenExtensionContextLost();
       }
     });
   }

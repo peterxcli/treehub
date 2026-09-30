@@ -1669,3 +1669,42 @@ html.treehub-ff-opened {
     }
   }
 }
+
+//
+// Asks to reload the page once TreeHub was updated or reloaded (util.context.js)
+//
+.treehub-reload-notice {
+  display: flex;
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: @index-base + 1;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-radius: 12px;
+  background-color: var(--overlay-bgColor, white);
+  box-shadow: @overlay-shadow;
+  color: var(--fgColor-default, #1f2328);
+  font-size: 14px;
+  line-height: 1.5;
+
+  .treehub-reload-notice-close {
+    padding: 6px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--fgColor-muted, #59636e);
+    line-height: 0;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @bg-hover;
+    }
+  }
+
+  .treehub-octicon {
+    fill: currentColor;
+  }
+}
