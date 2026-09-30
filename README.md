@@ -72,7 +72,7 @@ The extension's own page (toolbar icon, or the home icon in the sidebar) lists y
 
 <img src="docs/screenshots/signed-out.png" width="760" alt="The sidebar saying that TreeHub signed you out, with Sign in again">
 
-Bookmarks, the review queue and the history need you to sign in with GitHub (dashboard, or the sidebar settings). They are kept by the TreeHub server ([`server/`](server)), so they follow you across browsers.
+Bookmarks, the review queue and the history need you to sign in with GitHub (dashboard, or the sidebar settings). A sign-in lasts 30 days and is renewed while you use TreeHub, once half of it has passed. They are kept by the TreeHub server ([`server/`](server)), so they follow you across browsers.
 
 ## Access token
 

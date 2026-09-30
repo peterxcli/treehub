@@ -17,7 +17,7 @@ Nothing is sent to the TreeHub server until you sign in.
 
 - **Signing in.** You authorize the TreeHub OAuth app on GitHub, which gives the TreeHub server a one-time code. The server exchanges it for a GitHub access token (with the `repo` scope), reads your public GitHub profile with it, and passes the token back to your browser. The server does not store or log the token.
 - **Your GitHub token** is stored in your browser's extension storage and sent only to GitHub, like a personal access token. TreeHub uses it for the features above and to read the pull requests of your review queue and the repositories you bookmarked.
-- **Your TreeHub session** is a signed token stored in your browser's extension storage and sent only to the TreeHub server. It expires after 30 days.
+- **Your TreeHub session** is a signed token stored in your browser's extension storage and sent only to the TreeHub server. It expires after 30 days; while you use TreeHub, it is exchanged for a new one once half of that has passed, so that you stay signed in.
 - **What the TreeHub server stores** (in a Cloudflare D1 database):
   - your GitHub handle, which identifies you, and your GitHub user ID, name and avatar URL, from your GitHub profile;
   - when you created your TreeHub account and when you last signed in;

@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	treehubv1 "github.com/peterxcli/treehub/server/gen/go/treehub/v1"
 	"github.com/peterxcli/treehub/server/internal/auth"
 )
 
@@ -103,6 +104,40 @@ func TestLogoutAllRevokesSessions(t *testing.T) {
 	// A deleted user is signed out too.
 	e.exec("DELETE FROM users")
 	wantError(t, e.do("GET", "/api/me", fresh, ""), http.StatusUnauthorized, "login_required")
+}
+
+func TestRefreshSession(t *testing.T) {
+	e := newTestEnv(t, Config{})
+	token := e.session("octocat", 1)
+	issued := e.now
+	old, err := e.srv.Sessions.Parse(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Past half its lifetime: a new session, valid 30 days from now, for the same user and token version
+	e.now = e.now.Add(20 * 24 * time.Hour)
+	res := decode[treehubv1.RefreshSessionResponse](t, e.do("POST", "/api/session/refresh", token, ""), http.StatusOK)
+	claims, err := e.srv.Sessions.Parse(res.Session)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claims.IssuedAt.Unix() != e.now.Unix() || claims.ExpiresAt.Unix() != e.now.Add(30*24*time.Hour).Unix() {
+		t.Fatalf("issued %v, expires %v (now %v)", claims.IssuedAt, claims.ExpiresAt, e.now)
+	}
+	if claims.UID != old.UID || claims.Ver != old.Ver || claims.Subject != "octocat" {
+		t.Fatalf("claims = %+v, old = %+v", claims, old)
+	}
+
+	// The new session outlives the old one
+	e.now = issued.Add(31 * 24 * time.Hour)
+	wantError(t, e.do("GET", "/api/me", token, ""), http.StatusUnauthorized, "login_required")
+	wantError(t, e.do("POST", "/api/session/refresh", token, ""), http.StatusUnauthorized, "login_required")
+	e.me(res.Session)
+
+	// Signing out everywhere revokes refreshed sessions, which can't be refreshed then
+	wantOK(t, e.do("POST", "/api/logout-all", res.Session, ""))
+	wantError(t, e.do("POST", "/api/session/refresh", res.Session, ""), http.StatusUnauthorized, "login_required")
 }
 
 func TestGitHubStart(t *testing.T) {

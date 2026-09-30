@@ -117,6 +117,18 @@ export function readSession(jwt: string): {issuedAt: string | null; expiresAt: s
   }
 }
 
+/**
+ * Whether a TreeHub session has passed half its lifetime (now > issued + (expires - issued) / 2), when the extension
+ * exchanges it for a new one. False for an expired session (only signing in again helps) or one without these times.
+ */
+export function sessionNeedsRefresh(jwt: string, now = Date.now()): boolean {
+  const session = readSession(jwt);
+  if (!session || !session.issuedAt || !session.expiresAt) return false;
+  const issued = Date.parse(session.issuedAt);
+  const expires = Date.parse(session.expiresAt);
+  return now > issued + (expires - issued) / 2 && now < expires;
+}
+
 // ---------- Scopes ----------
 
 // Scopes that include others (https://docs.github.com/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps)

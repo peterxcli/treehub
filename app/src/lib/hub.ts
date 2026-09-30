@@ -7,6 +7,7 @@ import {signIn as authorize} from './auth.ts';
 import {
   explainCredentialProblem,
   readSession,
+  sessionNeedsRefresh,
   tokenFingerprint,
   type CredentialInfo,
   type CredentialProblem,
@@ -70,7 +71,40 @@ async function requireAuth(): Promise<Auth> {
       problem
     });
   }
-  return auth;
+  return renewSession(auth);
+}
+
+// The exchange of a session under way, if any
+let renewing: Promise<Auth> | null = null;
+
+/**
+ * Exchanges a session past half its lifetime for a new one (valid 30 days from then), so that using TreeHub keeps
+ * the user signed in. Not called within exclusive().
+ */
+function renewSession(auth: Auth): Promise<Auth> {
+  if (!sessionNeedsRefresh(auth.session)) return Promise.resolve(auth);
+  renewing =
+    renewing ||
+    (async () => {
+      try {
+        const session = await api.refreshSession(auth.session);
+        return await exclusive(async () => {
+          const {auth: current} = await load();
+          // Signed out, or in again, meanwhile: that stands
+          if (!current || current.session !== auth.session) return current || auth;
+          const renewed = {...current, session};
+          await save({auth: renewed});
+          return renewed;
+        });
+      } catch {
+        // The session is valid until it expires; the next request tries again (and one it doesn't allow anymore is
+        // refused by the server, which signs out with the reason)
+        return auth;
+      } finally {
+        renewing = null;
+      }
+    })();
+  return renewing;
 }
 
 /** The token used to read GitHub: the one from signing in, else the one entered in the sidebar settings. */

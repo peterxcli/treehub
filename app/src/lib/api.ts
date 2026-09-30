@@ -15,6 +15,7 @@ import {
   QueueItemSchema,
   RecordViewRequestSchema,
   RecordViewResponseSchema,
+  RefreshSessionResponseSchema,
   type Bookmark,
   type HistoryItem,
   type QueueItem,
@@ -132,6 +133,13 @@ export async function deleteAccount(session: string): Promise<void> {
 /** Revokes every session of the user, on all devices. */
 export async function logoutAll(session: string): Promise<void> {
   await call(OkResponseSchema, 'POST', '/api/logout-all', session);
+}
+
+/** Exchanges a session for a new one, valid for 30 days from now (see renewSession in hub.ts). */
+export async function refreshSession(session: string): Promise<string> {
+  const {session: renewed} = await call(RefreshSessionResponseSchema, 'POST', '/api/session/refresh', session);
+  if (!renewed) throw new ApiError(500, 'internal', 'The TreeHub server returned no session.');
+  return renewed;
 }
 
 export async function listBookmarks(session: string): Promise<BookmarkEntry[]> {

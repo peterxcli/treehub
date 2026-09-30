@@ -6,6 +6,7 @@ import {
   describeToken,
   explainCredentialProblem,
   readSession,
+  sessionNeedsRefresh,
   tokenFingerprint,
   type CredentialInfo,
   type ResponseInfo
@@ -183,4 +184,19 @@ test('TreeHub sessions: expiry read from the token, revocation and deleted accou
   assert.equal(explain(treehub('invalid or expired session'), {source: 'signin', session: 'not-a-jwt'}).kind,
     'session_invalid');
   assert.equal(explainCredentialProblem({service: 'treehub', status: 500}, {source: 'none'}, NOW), null);
+});
+
+test('TreeHub sessions are renewed past half their lifetime', () => {
+  const DAY = 86400;
+  const session = jwt({sub: 'peterxcli', iat: NOW / 1000 - 10 * DAY, exp: NOW / 1000 + 20 * DAY});
+  // Issued 10 days ago for 30 days: half its lifetime is 5 days away
+  assert.equal(sessionNeedsRefresh(session, NOW), false);
+  assert.equal(sessionNeedsRefresh(session, NOW + 5 * DAY * 1000), false);
+  assert.equal(sessionNeedsRefresh(session, NOW + 5 * DAY * 1000 + 1000), true);
+  assert.equal(sessionNeedsRefresh(session, NOW + 19 * DAY * 1000), true);
+  // Expired: only signing in again helps
+  assert.equal(sessionNeedsRefresh(session, NOW + 20 * DAY * 1000), false);
+  // Without its times, or not a JWT
+  assert.equal(sessionNeedsRefresh(jwt({sub: 'peterxcli', exp: NOW / 1000 + DAY}), NOW), false);
+  assert.equal(sessionNeedsRefresh('not-a-jwt', NOW), false);
 });

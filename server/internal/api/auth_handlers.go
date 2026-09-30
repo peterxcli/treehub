@@ -261,6 +261,19 @@ func (s *Server) me(r *http.Request) (any, error) {
 	return &treehubv1.MeResponse{User: userProto(userFrom(r.Context()))}, nil
 }
 
+// refreshSession handles POST /api/session/refresh: a new session for the
+// signed-in user, valid for 30 days from now, with the user's current token
+// version (so that "sign out everywhere" revokes it too). authed has checked
+// the session it replaces; the old one stays valid until it expires.
+func (s *Server) refreshSession(r *http.Request) (any, error) {
+	u := userFrom(r.Context())
+	session, err := s.Sessions.Issue(u.Login, u.GithubID, u.TokenVersion)
+	if err != nil {
+		return nil, err
+	}
+	return &treehubv1.RefreshSessionResponse{Session: session}, nil
+}
+
 // deleteMe deletes the account; ON DELETE CASCADE removes its bookmarks, queue
 // and history. Its sessions fail from now on (the user is gone), and a later
 // sign-in starts a new, empty account with a fresh token version.

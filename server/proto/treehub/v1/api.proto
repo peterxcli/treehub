@@ -24,6 +24,13 @@ message MeResponse {
   User user = 1;
 }
 
+// A new session for the signed-in user (POST /api/session/refresh), valid for 30 days from now. The extension asks
+// for one once its session has passed half its lifetime, so that using TreeHub keeps the user signed in. It carries
+// the same token version: signing out everywhere revokes it too.
+message RefreshSessionResponse {
+  string session = 1;
+}
+
 // A bookmarked repository.
 message Bookmark {
   string repo = 1; // "owner/name"
