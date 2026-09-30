@@ -3,6 +3,7 @@
 import {REFRESH_MINUTES} from './config.ts';
 import * as hub from './lib/hub.ts';
 import type {Reply, Request} from './lib/messages.ts';
+import {load} from './lib/storage.ts';
 
 const ALARM = 'treehub.refresh';
 const DASHBOARD = chrome.runtime.getURL('dashboard.html');
@@ -14,7 +15,7 @@ async function ensureAlarm(): Promise<void> {
 }
 
 async function refreshAll(): Promise<void> {
-  const {auth} = await chrome.storage.local.get('treehub.auth');
+  const {auth} = await load();
   if (!auth) return;
   await hub.sync();
   await hub.refreshStatuses();
