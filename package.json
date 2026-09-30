@@ -1,6 +1,6 @@
 {
   "name": "treehub",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Code tree for GitHub with pull request review tools, repository bookmarks and a review queue",
   "scripts": {
