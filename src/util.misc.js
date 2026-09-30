@@ -69,9 +69,20 @@ function errorJson(jqXHR) {
   }
 }
 
+/**
+ * Splits a file or folder name where it reads well split across lines: after the "/" of merged folders, after "_" and
+ * "-", before the extension, and between the words of camelCase names (OMKeyInfo: OM, Key, Info).
+ * @param {string} name
+ * @return {!Array<string>}
+ */
+function splitName(name) {
+  return name.split(/(?<=[/_-])|(?=\.)|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/);
+}
+
 window.isValidTimeStamp = isValidTimeStamp;
 window.timeAgo = timeAgo;
 window.sha256Hex = sha256Hex;
 window.escapeHtml = escapeHtml;
 window.stripTags = stripTags;
 window.errorJson = errorJson;
+window.splitName = splitName;

@@ -24,7 +24,8 @@ TreeHub adds an IDE-like code tree and pull request review tools to GitHub.
 CODE TREE
 • Browse any repository as a tree, with file-type icons
 • Lazy loading for huge repositories
-• Pin, resize and dock the sidebar on the left or right
+• Pin, resize and dock the sidebar on the left or right; double-click its edge to fit it to the tree
+• Nothing is cut at any width: names wrap where they read well, and the stats of a change move below the name when needed
 • Follows GitHub's light and dark themes
 
 PULL REQUEST CHANGES

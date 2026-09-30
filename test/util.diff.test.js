@@ -15,7 +15,7 @@ function load(...files) {
 
 const {parsePatch, mergeFileWithPatch, patchToRows, describeRowRange, splitLines, splitHtmlLines} =
   load('src/util.diff.js');
-const {timeAgo, sha256Hex} = load('src/util.misc.js');
+const {timeAgo, sha256Hex, splitName} = load('src/util.misc.js');
 
 // Values created inside the sandbox belong to another realm; copy them before deep comparisons.
 const local = (value) => JSON.parse(JSON.stringify(value));
@@ -166,4 +166,16 @@ test('sha256Hex matches GitHub diff anchors', async () => {
     await sha256Hex('hadoop-hdds/client/src/main/java/org/apache/hadoop/hdds/scm/storage/StreamBlockInputStream.java'),
     'd1f908358e9741b009f4337b2a511ce101e237891dc56ea8041516775c1a1e54'
   );
+});
+
+test('splitName splits names where they read well across lines', () => {
+  const split = (name) => JSON.parse(JSON.stringify(splitName(name)));
+  assert.deepEqual(split('TestStreamBlockInputStream.java'), ['Test', 'Stream', 'Block', 'Input', 'Stream', '.java']);
+  assert.deepEqual(split('main/java/org/apache/hadoop'), ['main/', 'java/', 'org/', 'apache/', 'hadoop']);
+  assert.deepEqual(split('container-service/src'), ['container-', 'service/', 'src']);
+  assert.deepEqual(split('OMKeyInfo'), ['OM', 'Key', 'Info']);
+  assert.deepEqual(split('snake_case_name.py'), ['snake_', 'case_', 'name', '.py']);
+  // Nothing to split
+  assert.deepEqual(split('.devcontainer'), ['.devcontainer']);
+  assert.deepEqual(split('README'), ['README']);
 });

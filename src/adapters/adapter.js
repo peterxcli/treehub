@@ -252,6 +252,7 @@ class Adapter {
   setDock($sidebar, dock) {
     if ($sidebar.resizable('instance')) $sidebar.resizable('destroy');
     $sidebar.resizable({handles: dock === 'right' ? 'w' : 'e', minWidth: this.getMinWidth()});
+    $sidebar.find('.ui-resizable-handle').attr('title', 'Drag to resize. Double-click to fit the tree.');
   }
 
   /**

@@ -38,7 +38,7 @@ The open pull requests of the repository, with review filters (awaiting your rev
 
 ### Sidebar
 
-Pin, resize and dock it on the left or right. Follows GitHub's light and dark themes.
+Pin, resize and dock it on the left or right; double-click its edge to fit it to the tree. At any width, nothing is cut: names wrap where they read well (after the / of merged folders, between the words of names), the stats of a change go below the name when they don't fit next to it, and levels indent less in a narrow sidebar. Follows GitHub's light and dark themes.
 
 <img src="docs/screenshots/sidebar-dark.png" width="760" alt="The sidebar docked on the right, in GitHub's dark theme">
 

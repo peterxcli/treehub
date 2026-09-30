@@ -90,6 +90,7 @@ $(document).ready(() => {
       .addClass(adapter.getCssClass())
       .width(Math.min(parseInt(await extStore.get(STORE.WIDTH)), 1000))
       .resize(() => layoutChanged(true))
+      .on('dblclick', '.ui-resizable-handle', fitToTree)
       .appendTo($('body'));
 
     $document.trigger(EVENT.SIDEBAR_HTML_INSERTED);
@@ -280,6 +281,23 @@ $(document).ready(() => {
       applyDock(newDock);
       adapter.setDock($sidebar, dock);
       await layoutChanged();
+    }
+
+    /**
+     * Fits the sidebar to the tree: as wide as its widest row (of the open folders) needs not to wrap, within limits.
+     */
+    async function fitToTree() {
+      const rows = $sidebar.find('.treehub-tree-view.current .jstree-anchor').get().filter((row) => row.offsetParent);
+      if (!rows.length) return;
+
+      $html.addClass('treehub-measuring');
+      const right = Math.max(...rows.map((row) => row.getBoundingClientRect().right));
+      $html.removeClass('treehub-measuring');
+
+      // With room for a scrollbar
+      const needed = Math.ceil(right - $sidebar[0].getBoundingClientRect().left) + 16;
+      $sidebar.width(Math.max(adapter.getMinWidth(), Math.min(needed, Math.round(window.innerWidth * 0.6))));
+      await layoutChanged(true);
     }
 
     async function layoutChanged(save = false) {

@@ -13,7 +13,7 @@ class TreeView {
       .on('click', this._onItemClick.bind(this))
       .jstree({
         core: {multiple: false, animation: 50, worker: false, themes: {responsive: false}},
-        plugins: ['wholerow', 'search', 'truncate', 'comments'],
+        plugins: ['wholerow', 'search', 'wrap', 'comments'],
         comments: {render: (node) => this._renderThreads(node.original.patch.threads)}
       });
 
@@ -67,19 +67,21 @@ class TreeView {
 
   _showHeader(repo) {
     const adapter = this.adapter;
+    const branch = escapeHtml((repo.displayBranch || repo.branch).toString());
 
     this.$view
       .find('.treehub-view-header')
       .html(
+        // The text of each line wraps next to its icon, up to two lines (the full text in a tooltip)
         `<div class="treehub-header-summary">
-          <div class="treehub-header-repo">
+          <div class="treehub-header-repo" title="${repo.username}/${repo.reponame}">
             <i class="treehub-icon-repo"></i>
-            <a href="/${repo.username}">${repo.username}</a> /
-            <a class="treehub-header-repo-link" href="/${repo.username}/${repo.reponame}">${repo.reponame}</a>
+            <span class="treehub-header-text"><a href="/${repo.username}">${repo.username}</a> /
+            <a class="treehub-header-repo-link" href="/${repo.username}/${repo.reponame}">${repo.reponame}</a></span>
           </div>
-          <div class="treehub-header-branch">
+          <div class="treehub-header-branch" title="${branch}">
             <i class="treehub-icon-branch"></i>
-            ${escapeHtml((repo.displayBranch || repo.branch).toString())}
+            <span class="treehub-header-text">${branch}</span>
           </div>
         </div>`
       )
@@ -128,18 +130,11 @@ class TreeView {
     }
 
     // Handle icon click, fix #122
-    if ($target.is('i.jstree-icon')) {
-      $target = $target.parent();
-      download = true;
-    }
+    if ($target.is('i.jstree-icon')) download = true;
 
-    $target = $target.is('a.jstree-anchor') ? $target : $target.parent();
-
-    if ($target.is('.treehub-patch')) {
-      $target = $target.parent();
-    }
-
-    if (!$target.is('a.jstree-anchor')) return;
+    // The row clicked: its name, stats, icon (see the wrap plugin in util.plugins.js)
+    $target = $target.closest('a.jstree-anchor');
+    if (!$target.length) return;
 
     // Refocus once the page changed, so that keyboard navigation keeps working
     const refocusAfterCompletion = () => {

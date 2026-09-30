@@ -1,4 +1,9 @@
 .treehub-sidebar.treehub-github-sidebar {
+  // Parts of the sidebar adapt to its width (@container treehub-sidebar)
+  container: treehub-sidebar / inline-size;
+  // Indentation of the tree levels: less in a narrow sidebar, where names need the room
+  --treehub-indent: clamp(8px, 4cqi, 16px);
+  --treehub-guide: var(--borderColor-muted, #d8dee4);
   box-sizing: border-box;
   right: 0 !important;
   top: 0 !important;
@@ -126,13 +131,27 @@
           width: 100%;
         }
 
+        // An icon, and its text wrapping next to it, up to two lines (the full text in their tooltip)
         .treehub-header-repo,
         .treehub-header-branch {
+          display: flex;
+          align-items: flex-start;
           width: 100%;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
           box-sizing: border-box;
+
+          i {
+            flex: none;
+          }
+        }
+
+        .treehub-header-text {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          min-width: 0;
+          overflow: hidden;
+          white-space: normal;
+          overflow-wrap: anywhere;
         }
 
         .treehub-header-repo {
@@ -162,7 +181,7 @@
         }
 
         .treehub-header-branch {
-          line-height: 1;
+          line-height: 1.2;
           margin-left: -1px;
           font-size: 11px;
           color: white;
@@ -183,16 +202,66 @@
       .jstree-anchor {
         color: var(--fgColor-default, @dark) !important;
         outline: none;
-        padding-right: 0;
         text-decoration: none;
-        width: calc(~'100% - 20px');
-        display: inline-flex;
+        display: flex;
+        align-items: flex-start;
+        width: auto;
+        min-width: 0;
+        height: auto;
+        min-height: 24px;
+        padding: 2px 4px 2px 1px;
+        line-height: 20px !important;
+        white-space: normal;
 
-        & > span:not(.treehub-comments-toggle) {
+        .treehub-node-body {
           color: var(--fgColor-default, @dark) !important;
         }
         &:hover {
           text-decoration: none !important;
+        }
+
+        & > .jstree-themeicon {
+          height: 20px;
+          line-height: 20px !important;
+        }
+      }
+
+      // A row: its name, then the stats of the change and its conversations, which go to the next line when they
+      // don't fit next to the name. Names wrap where they read well split (<wbr>), anywhere as a last resort.
+      .treehub-node-body {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        align-items: baseline;
+        column-gap: 6px;
+        min-width: 0;
+      }
+
+      .treehub-node-name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .treehub-node-meta {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        align-items: baseline;
+        min-width: 0;
+      }
+
+      // Measuring the width the rows need (fitting the sidebar to the tree): nothing wraps
+      .treehub-measuring & {
+        .jstree-anchor {
+          width: max-content !important;
+        }
+        .treehub-node-body,
+        .treehub-node-meta,
+        .treehub-patch {
+          flex-wrap: nowrap;
+        }
+        .treehub-node-name {
+          white-space: nowrap;
         }
       }
 
@@ -207,18 +276,45 @@
       .jstree-default {
         .jstree-container-ul {
           max-width: 100%;
+          // Highlights extend to the left edge (see .jstree-wholerow)
+          overflow-x: clip;
         }
 
+        // A node is a grid: the open/close icon and the row, then the children and the conversations below. The
+        // highlight of the row (wholerow) covers the icon and the row, as tall as the row is.
+        .jstree-node {
+          display: grid;
+          grid-template-columns: 20px minmax(0, 1fr);
+          min-height: 0;
+          line-height: 24px;
+          margin-left: var(--treehub-indent);
+          white-space: normal;
+        }
         .jstree-container-ul > .jstree-node {
           margin-left: 0px;
         }
-        .jstree-node {
-          line-height: 24px;
-          margin-left: 16px;
+        .jstree-ocl {
+          grid-area: 1 / 1;
+        }
+        .jstree-anchor {
+          grid-area: 1 / 2;
+        }
+        .jstree-children,
+        .treehub-comments {
+          grid-column: 1 / -1;
+        }
+        // Guides of the levels, below the open/close icon of each folder
+        .jstree-children {
+          background: linear-gradient(var(--treehub-guide), var(--treehub-guide)) 10px 0 / 1px 100% no-repeat;
         }
 
         .jstree-wholerow {
+          grid-area: 1 / 1 / 2 / -1;
+          position: static;
+          width: auto;
           height: auto;
+          // Also below the indentation, up to the left edge of the tree (which clips it)
+          margin-left: -1000px;
           &-hovered {
             background: var(--bgColor-neutral-muted, #eff0f1);
           }
@@ -233,8 +329,7 @@
         }
 
         .jstree-icon,
-        .jstree-icon:empty,
-        .jstree-anchor {
+        .jstree-icon:empty {
           line-height: 24px !important;
           font-style: normal;
         }
@@ -338,31 +433,34 @@
           }
         }
 
+        // Nothing is cut: the header wraps, and the first comment shows up to three lines
         .treehub-comment-header {
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          white-space: nowrap;
+          column-gap: 6px;
         }
 
         .treehub-comment-author,
-        .treehub-comment-time,
         .treehub-comment-body,
         .treehub-comment-replies {
+          overflow-wrap: anywhere;
+        }
+
+        .treehub-comment-body {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
         }
 
         .treehub-comment-author {
-          flex-shrink: 1;
-          min-width: 40px;
-          margin-right: 6px;
+          min-width: 0;
           font-weight: 600;
         }
 
         .treehub-comment-time {
-          flex-shrink: 2;
-          min-width: 0;
+          white-space: nowrap;
         }
 
         .treehub-comment-time,
@@ -373,7 +471,6 @@
 
         .treehub-comment-status {
           flex-shrink: 0;
-          margin-left: 6px;
           padding: 0 6px;
           border: 1px solid var(--borderColor-default, @gray-less);
           border-radius: 2em;
@@ -412,13 +509,15 @@
       }
 
       .treehub-patch {
-        display: inline-flex;
-        flex-grow: 1;
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        column-gap: 5px;
         margin-right: 5px;
-
         font-size: 80%;
+
         span {
-          padding-left: 5px;
+          white-space: nowrap;
         }
       }
     }
@@ -474,6 +573,17 @@
             position: relative;
             top: 1px;
             left: 2px;
+          }
+        }
+
+        // Checkbox labels wrap next to their checkbox, not below it
+        label:has(> input[type='checkbox']) {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 4px;
+
+          input {
+            flex: none;
           }
         }
 
@@ -702,6 +812,16 @@
   }
 }
 
+// A narrow sidebar: slightly smaller text, so that fewer rows need two lines
+@container treehub-sidebar (max-width: 270px) {
+  .treehub-tree-view .jstree-anchor {
+    font-size: 13px;
+  }
+  .treehub-tree-view .treehub-view-header .treehub-header-repo {
+    font-size: 12px;
+  }
+}
+
 //
 // Sidebar showing styles
 //
@@ -782,9 +902,9 @@
     left: auto !important;
     transform: translate3d(100%, 0, 0);
 
+    // As wide as the handle on the right edge (.treehub-show), 0 while the sidebar is hidden
     .ui-resizable-w {
       left: -4px;
-      width: 0;
     }
 
     .treehub-views,
