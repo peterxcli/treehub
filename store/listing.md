@@ -51,9 +51,13 @@ BOOKMARKS
 • One click bookmarks the current repository; the icon turns bold once bookmarked
 • Your bookmarks with their description, language, stars, open pull requests and issues
 
+HISTORY
+• The repositories and pull requests you open on GitHub, most recent first and grouped by day, so you can find them again
+• Kept 30 days after your last visit by default (from 1 to 365 days); pause the recording, remove entries or clear it anytime
+
 DASHBOARD
-• The extension's own page lists your review queue, with filters by status and sorting, and your bookmarks
-• Sign in with GitHub: your bookmarks and queue follow you across browsers
+• The extension's own page lists your review queue, with filters by status and sorting, your bookmarks and your history
+• Sign in with GitHub: your bookmarks, queue and history follow you across browsers
 
 PRIVACY
 The code tree and review tools work on public repositories without any setup or account, and talk only to GitHub. Bookmarks and the review queue need you to sign in with GitHub: the TreeHub server then keeps your GitHub handle, your bookmarks and your queued pull requests. Your GitHub token stays in your browser, statuses are computed there, and you can delete your account from the dashboard. Details: https://github.com/peterxcli/treehub/blob/main/PRIVACY.md
@@ -112,7 +116,7 @@ TreeHub helps developers navigate and review code on GitHub: a code tree and pul
 
 - **Personally identifiable information**: when the user signs in, the TreeHub server stores their GitHub handle, user ID, name and avatar URL from their GitHub profile.
 - **Authentication information**: the GitHub token (from signing in, or a personal access token) stored locally and sent only to GitHub's API; the TreeHub session token stored locally and sent only to the TreeHub server.
-- **Web history**: for pull requests in the user's review queue only, the time the user last opened them on github.com, stored by the TreeHub server.
+- **Web history**: while the user is signed in, the GitHub repositories and pull requests they open (repository name, pull request number and title, first and last visit, number of visits), stored by the TreeHub server for the user's history; deleted a set number of days after the last visit (30 by default, 1 to 365), pausable and clearable in the dashboard. Also, for pull requests in the review queue, the time the user last opened them.
 - **Website content**: the names of bookmarked repositories and the repository, number and title of queued pull requests, stored by the TreeHub server; review comments the user writes are sent to GitHub when the user adds them. Other page content is only read locally.
 
 Then check all three certifications (not sold to third parties, not used for unrelated purposes, not used for creditworthiness).

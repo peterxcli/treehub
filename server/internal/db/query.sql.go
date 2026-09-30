@@ -19,6 +19,15 @@ func (q *Queries) BumpTokenVersion(ctx context.Context, githubID int64) error {
 	return err
 }
 
+const clearHistory = `-- name: ClearHistory :exec
+DELETE FROM history WHERE login = ?
+`
+
+func (q *Queries) ClearHistory(ctx context.Context, login string) error {
+	_, err := q.db.ExecContext(ctx, clearHistory, login)
+	return err
+}
+
 const countBookmarks = `-- name: CountBookmarks :one
 SELECT COUNT(*) FROM bookmarks WHERE login = ?
 `
@@ -55,6 +64,27 @@ func (q *Queries) DeleteBookmark(ctx context.Context, arg DeleteBookmarkParams) 
 	return err
 }
 
+const deleteHistoryItem = `-- name: DeleteHistoryItem :exec
+DELETE FROM history WHERE login = ? AND kind = ? AND repo = ? AND number = ?
+`
+
+type DeleteHistoryItemParams struct {
+	Login  string
+	Kind   string
+	Repo   string
+	Number int64
+}
+
+func (q *Queries) DeleteHistoryItem(ctx context.Context, arg DeleteHistoryItemParams) error {
+	_, err := q.db.ExecContext(ctx, deleteHistoryItem,
+		arg.Login,
+		arg.Kind,
+		arg.Repo,
+		arg.Number,
+	)
+	return err
+}
+
 const deleteQueueItem = `-- name: DeleteQueueItem :exec
 DELETE FROM queue_items WHERE login = ? AND repo = ? AND number = ?
 `
@@ -74,7 +104,7 @@ const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users WHERE github_id = ?
 `
 
-// Deletes the account; ON DELETE CASCADE removes its bookmarks and queue.
+// Deletes the account; ON DELETE CASCADE removes its bookmarks, queue and history.
 func (q *Queries) DeleteUser(ctx context.Context, githubID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, githubID)
 	return err
@@ -150,7 +180,7 @@ func (q *Queries) GetQueueItem(ctx context.Context, arg GetQueueItemParams) (Que
 const getUserByGithubID = `-- name: GetUserByGithubID :one
 
 
-SELECT login, github_id, name, avatar_url, token_version, created_at, last_login_at FROM users WHERE github_id = ?
+SELECT login, github_id, name, avatar_url, token_version, created_at, last_login_at, history_retention_days, history_paused FROM users WHERE github_id = ?
 `
 
 // Queries compiled by sqlc (see sqlc.yaml). Engine: SQLite (Cloudflare D1).
@@ -167,12 +197,14 @@ func (q *Queries) GetUserByGithubID(ctx context.Context, githubID int64) (User, 
 		&i.TokenVersion,
 		&i.CreatedAt,
 		&i.LastLoginAt,
+		&i.HistoryRetentionDays,
+		&i.HistoryPaused,
 	)
 	return i, err
 }
 
 const getUserByLogin = `-- name: GetUserByLogin :one
-SELECT login, github_id, name, avatar_url, token_version, created_at, last_login_at FROM users WHERE login = ?
+SELECT login, github_id, name, avatar_url, token_version, created_at, last_login_at, history_retention_days, history_paused FROM users WHERE login = ?
 `
 
 func (q *Queries) GetUserByLogin(ctx context.Context, login string) (User, error) {
@@ -186,6 +218,8 @@ func (q *Queries) GetUserByLogin(ctx context.Context, login string) (User, error
 		&i.TokenVersion,
 		&i.CreatedAt,
 		&i.LastLoginAt,
+		&i.HistoryRetentionDays,
+		&i.HistoryPaused,
 	)
 	return i, err
 }
@@ -223,6 +257,125 @@ func (q *Queries) ListBookmarks(ctx context.Context, login string) ([]Bookmark, 
 	for rows.Next() {
 		var i Bookmark
 		if err := rows.Scan(&i.Login, &i.Repo, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHistory = `-- name: ListHistory :many
+SELECT login, kind, repo, number, title, first_viewed_at, last_viewed_at, view_count FROM history
+WHERE login = ?1 AND last_viewed_at >= ?2 AND (kind = ?3 OR ?3 = '')
+ORDER BY last_viewed_at DESC, kind DESC, repo DESC, number DESC
+LIMIT ?4
+`
+
+type ListHistoryParams struct {
+	Login    string
+	Since    string
+	Kind     string
+	PageSize int64
+}
+
+// The first page, last viewed first. Rows last viewed before since (the
+// retention) are left out even if they are not pruned yet. An empty kind lists
+// both kinds; written this way SQLite still reads history_recent in order,
+// while a plain "kind = ?" makes it sort part of the result in a temporary B-tree.
+func (q *Queries) ListHistory(ctx context.Context, arg ListHistoryParams) ([]History, error) {
+	rows, err := q.db.QueryContext(ctx, listHistory,
+		arg.Login,
+		arg.Since,
+		arg.Kind,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []History{}
+	for rows.Next() {
+		var i History
+		if err := rows.Scan(
+			&i.Login,
+			&i.Kind,
+			&i.Repo,
+			&i.Number,
+			&i.Title,
+			&i.FirstViewedAt,
+			&i.LastViewedAt,
+			&i.ViewCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listHistoryAfter = `-- name: ListHistoryAfter :many
+SELECT login, kind, repo, number, title, first_viewed_at, last_viewed_at, view_count FROM history
+WHERE login = ?1 AND last_viewed_at >= ?2 AND (kind = ?3 OR ?3 = '')
+  AND (last_viewed_at, kind, repo, number) < (?4, ?5, ?6, ?7)
+ORDER BY last_viewed_at DESC, kind DESC, repo DESC, number DESC
+LIMIT ?8
+`
+
+type ListHistoryAfterParams struct {
+	Login         string
+	Since         string
+	Kind          string
+	AfterViewedAt string
+	AfterKind     string
+	AfterRepo     string
+	AfterNumber   string
+	PageSize      int64
+}
+
+// The page after a cursor (the last row of the previous page). The row value
+// comparison lets SQLite seek history_recent straight to the cursor. sqlc types
+// all its parameters like the first column (text); SQLite still compares
+// after_number as an integer (the column's affinity).
+func (q *Queries) ListHistoryAfter(ctx context.Context, arg ListHistoryAfterParams) ([]History, error) {
+	rows, err := q.db.QueryContext(ctx, listHistoryAfter,
+		arg.Login,
+		arg.Since,
+		arg.Kind,
+		arg.AfterViewedAt,
+		arg.AfterKind,
+		arg.AfterRepo,
+		arg.AfterNumber,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []History{}
+	for rows.Next() {
+		var i History
+		if err := rows.Scan(
+			&i.Login,
+			&i.Kind,
+			&i.Repo,
+			&i.Number,
+			&i.Title,
+			&i.FirstViewedAt,
+			&i.LastViewedAt,
+			&i.ViewCount,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -299,6 +452,113 @@ func (q *Queries) MarkQueueItemSeen(ctx context.Context, arg MarkQueueItemSeenPa
 	return i, err
 }
 
+const pruneHistory = `-- name: PruneHistory :exec
+DELETE FROM history WHERE login = ?1 AND last_viewed_at < ?2
+`
+
+type PruneHistoryParams struct {
+	Login  string
+	Before string
+}
+
+// Deletes the rows last viewed before the retention.
+func (q *Queries) PruneHistory(ctx context.Context, arg PruneHistoryParams) error {
+	_, err := q.db.ExecContext(ctx, pruneHistory, arg.Login, arg.Before)
+	return err
+}
+
+const recordView = `-- name: RecordView :one
+
+INSERT INTO history (login, kind, repo, number, first_viewed_at, last_viewed_at)
+VALUES (?1, ?2, ?3, ?4, ?5, ?5)
+ON CONFLICT (login, kind, repo, number) DO UPDATE SET
+  repo = excluded.repo,
+  last_viewed_at = excluded.last_viewed_at,
+  view_count = history.view_count + 1
+RETURNING login, kind, repo, number, title, first_viewed_at, last_viewed_at, view_count
+`
+
+type RecordViewParams struct {
+	Login    string
+	Kind     string
+	Repo     string
+	Number   int64
+	ViewedAt string
+}
+
+// ---------- history ----------
+// The Worker passes the timestamps (RFC 3339 UTC with milliseconds) instead of
+// using SQLite's clock: milliseconds keep quick views in order, and the
+// retention cutoffs come from the same clock, which tests can move.
+// A view without a title: a new row starts with both times at viewed_at and
+// view_count 1; a known one counts the view, moves last_viewed_at, keeps its
+// title and takes the request's spelling of the repo.
+func (q *Queries) RecordView(ctx context.Context, arg RecordViewParams) (History, error) {
+	row := q.db.QueryRowContext(ctx, recordView,
+		arg.Login,
+		arg.Kind,
+		arg.Repo,
+		arg.Number,
+		arg.ViewedAt,
+	)
+	var i History
+	err := row.Scan(
+		&i.Login,
+		&i.Kind,
+		&i.Repo,
+		&i.Number,
+		&i.Title,
+		&i.FirstViewedAt,
+		&i.LastViewedAt,
+		&i.ViewCount,
+	)
+	return i, err
+}
+
+const recordViewWithTitle = `-- name: RecordViewWithTitle :one
+INSERT INTO history (login, kind, repo, number, title, first_viewed_at, last_viewed_at)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+ON CONFLICT (login, kind, repo, number) DO UPDATE SET
+  repo = excluded.repo,
+  title = excluded.title,
+  last_viewed_at = excluded.last_viewed_at,
+  view_count = history.view_count + 1
+RETURNING login, kind, repo, number, title, first_viewed_at, last_viewed_at, view_count
+`
+
+type RecordViewWithTitleParams struct {
+	Login    string
+	Kind     string
+	Repo     string
+	Number   int64
+	Title    *string
+	ViewedAt string
+}
+
+// The same with a title from the request, which replaces the stored one.
+func (q *Queries) RecordViewWithTitle(ctx context.Context, arg RecordViewWithTitleParams) (History, error) {
+	row := q.db.QueryRowContext(ctx, recordViewWithTitle,
+		arg.Login,
+		arg.Kind,
+		arg.Repo,
+		arg.Number,
+		arg.Title,
+		arg.ViewedAt,
+	)
+	var i History
+	err := row.Scan(
+		&i.Login,
+		&i.Kind,
+		&i.Repo,
+		&i.Number,
+		&i.Title,
+		&i.FirstViewedAt,
+		&i.LastViewedAt,
+		&i.ViewCount,
+	)
+	return i, err
+}
+
 const renameUser = `-- name: RenameUser :exec
 UPDATE users SET login = ? WHERE github_id = ?
 `
@@ -308,11 +568,39 @@ type RenameUserParams struct {
 	GithubID int64
 }
 
-// Moves the account (and, through ON UPDATE CASCADE, its bookmarks and queue)
-// to another handle.
+// Moves the account (and, through ON UPDATE CASCADE, its bookmarks, queue and
+// history) to another handle.
 func (q *Queries) RenameUser(ctx context.Context, arg RenameUserParams) error {
 	_, err := q.db.ExecContext(ctx, renameUser, arg.Login, arg.GithubID)
 	return err
+}
+
+const setHistorySettings = `-- name: SetHistorySettings :one
+UPDATE users SET history_retention_days = ?, history_paused = ? WHERE github_id = ?
+RETURNING login, github_id, name, avatar_url, token_version, created_at, last_login_at, history_retention_days, history_paused
+`
+
+type SetHistorySettingsParams struct {
+	HistoryRetentionDays int64
+	HistoryPaused        int64
+	GithubID             int64
+}
+
+func (q *Queries) SetHistorySettings(ctx context.Context, arg SetHistorySettingsParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, setHistorySettings, arg.HistoryRetentionDays, arg.HistoryPaused, arg.GithubID)
+	var i User
+	err := row.Scan(
+		&i.Login,
+		&i.GithubID,
+		&i.Name,
+		&i.AvatarUrl,
+		&i.TokenVersion,
+		&i.CreatedAt,
+		&i.LastLoginAt,
+		&i.HistoryRetentionDays,
+		&i.HistoryPaused,
+	)
+	return i, err
 }
 
 const touchUserLogin = `-- name: TouchUserLogin :one
@@ -321,7 +609,7 @@ SET name = ?,
     avatar_url = ?,
     last_login_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
 WHERE github_id = ?
-RETURNING login, github_id, name, avatar_url, token_version, created_at, last_login_at
+RETURNING login, github_id, name, avatar_url, token_version, created_at, last_login_at, history_retention_days, history_paused
 `
 
 type TouchUserLoginParams struct {
@@ -341,8 +629,29 @@ func (q *Queries) TouchUserLogin(ctx context.Context, arg TouchUserLoginParams) 
 		&i.TokenVersion,
 		&i.CreatedAt,
 		&i.LastLoginAt,
+		&i.HistoryRetentionDays,
+		&i.HistoryPaused,
 	)
 	return i, err
+}
+
+const trimHistory = `-- name: TrimHistory :exec
+DELETE FROM history WHERE rowid IN (
+  SELECT h.rowid FROM history AS h WHERE h.login = ?1
+  ORDER BY h.last_viewed_at DESC, h.kind DESC, h.repo DESC, h.number DESC
+  LIMIT -1 OFFSET ?2
+)
+`
+
+type TrimHistoryParams struct {
+	Login   string
+	MaxRows int64
+}
+
+// Keeps the user's max_rows most recently viewed rows and deletes the others.
+func (q *Queries) TrimHistory(ctx context.Context, arg TrimHistoryParams) error {
+	_, err := q.db.ExecContext(ctx, trimHistory, arg.Login, arg.MaxRows)
+	return err
 }
 
 const upsertBookmark = `-- name: UpsertBookmark :one

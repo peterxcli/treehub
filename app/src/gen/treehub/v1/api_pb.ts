@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file treehub/v1/api.proto.
  */
 export const file_treehub_v1_api: GenFile = /*@__PURE__*/
-  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiLAoIQm9va21hcmsSDAoEcmVwbxgBIAEoCRISCgpjcmVhdGVkX2F0GAIgASgJIkAKFUxpc3RCb29rbWFya3NSZXNwb25zZRInCglib29rbWFya3MYASADKAsyFC50cmVlaHViLnYxLkJvb2ttYXJrIoUBCglRdWV1ZUl0ZW0SDAoEcmVwbxgBIAEoCRIOCgZudW1iZXIYAiABKAUSEgoFdGl0bGUYAyABKAlIAIgBARIQCghhZGRlZF9hdBgEIAEoCRIZCgxsYXN0X3NlZW5fYXQYBSABKAlIAYgBAUIICgZfdGl0bGVCDwoNX2xhc3Rfc2Vlbl9hdCI5ChFMaXN0UXVldWVSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLnRyZWVodWIudjEuUXVldWVJdGVtIjMKE1B1dFF1ZXVlSXRlbVJlcXVlc3QSEgoFdGl0bGUYASABKAlIAIgBAUIICgZfdGl0bGUiQAoNRXJyb3JSZXNwb25zZRINCgVlcnJvchgBIAEoCRIUCgdtZXNzYWdlGAIgASgJSACIAQFCCgoIX21lc3NhZ2UiGAoKT2tSZXNwb25zZRIKCgJvaxgBIAEoCEJBWj9naXRodWIuY29tL3BldGVyeGNsaS90cmVlaHViL3NlcnZlci9nZW4vZ28vdHJlZWh1Yi92MTt0cmVlaHVidjFiBnByb3RvMw");
+  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiLAoIQm9va21hcmsSDAoEcmVwbxgBIAEoCRISCgpjcmVhdGVkX2F0GAIgASgJIkAKFUxpc3RCb29rbWFya3NSZXNwb25zZRInCglib29rbWFya3MYASADKAsyFC50cmVlaHViLnYxLkJvb2ttYXJrIoUBCglRdWV1ZUl0ZW0SDAoEcmVwbxgBIAEoCRIOCgZudW1iZXIYAiABKAUSEgoFdGl0bGUYAyABKAlIAIgBARIQCghhZGRlZF9hdBgEIAEoCRIZCgxsYXN0X3NlZW5fYXQYBSABKAlIAYgBAUIICgZfdGl0bGVCDwoNX2xhc3Rfc2Vlbl9hdCI5ChFMaXN0UXVldWVSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLnRyZWVodWIudjEuUXVldWVJdGVtIjMKE1B1dFF1ZXVlSXRlbVJlcXVlc3QSEgoFdGl0bGUYASABKAlIAIgBAUIICgZfdGl0bGUiQAoNRXJyb3JSZXNwb25zZRINCgVlcnJvchgBIAEoCRIUCgdtZXNzYWdlGAIgASgJSACIAQFCCgoIX21lc3NhZ2UiGAoKT2tSZXNwb25zZRIKCgJvaxgBIAEoCCKcAQoLSGlzdG9yeUl0ZW0SDAoEa2luZBgBIAEoCRIMCgRyZXBvGAIgASgJEg4KBm51bWJlchgDIAEoBRISCgV0aXRsZRgEIAEoCUgAiAEBEhcKD2ZpcnN0X3ZpZXdlZF9hdBgFIAEoCRIWCg5sYXN0X3ZpZXdlZF9hdBgGIAEoCRISCgp2aWV3X2NvdW50GAcgASgFQggKBl90aXRsZSJnChNMaXN0SGlzdG9yeVJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcudHJlZWh1Yi52MS5IaXN0b3J5SXRlbRIYCgtuZXh0X2N1cnNvchgCIAEoCUgAiAEBQg4KDF9uZXh0X2N1cnNvciIxChFSZWNvcmRWaWV3UmVxdWVzdBISCgV0aXRsZRgBIAEoCUgAiAEBQggKBl90aXRsZSJZChJSZWNvcmRWaWV3UmVzcG9uc2USKgoEaXRlbRgBIAEoCzIXLnRyZWVodWIudjEuSGlzdG9yeUl0ZW1IAIgBARIOCgZwYXVzZWQYAiABKAhCBwoFX2l0ZW0iOQoPSGlzdG9yeVNldHRpbmdzEhYKDnJldGVudGlvbl9kYXlzGAEgASgFEg4KBnBhdXNlZBgCIAEoCEJBWj9naXRodWIuY29tL3BldGVyeGNsaS90cmVlaHViL3NlcnZlci9nZW4vZ28vdHJlZWh1Yi92MTt0cmVlaHVidjFiBnByb3RvMw");
 
 /**
  * A GitHub user signed in to TreeHub. The GitHub handle (login) identifies the user.
@@ -419,4 +419,279 @@ export type OkResponseJson = {
  */
 export const OkResponseSchema: GenMessage<OkResponse, {jsonType: OkResponseJson}> = /*@__PURE__*/
   messageDesc(file_treehub_v1_api, 8);
+
+/**
+ * A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
+ * user's retention (HistorySettings), counted from the last view.
+ *
+ * @generated from message treehub.v1.HistoryItem
+ */
+export type HistoryItem = Message<"treehub.v1.HistoryItem"> & {
+  /**
+   * "repo" or "pull"
+   *
+   * @generated from field: string kind = 1;
+   */
+  kind: string;
+
+  /**
+   * "owner/name"
+   *
+   * @generated from field: string repo = 2;
+   */
+  repo: string;
+
+  /**
+   * pull request number, 0 for a repository
+   *
+   * @generated from field: int32 number = 3;
+   */
+  number: number;
+
+  /**
+   * pull request title when last viewed
+   *
+   * @generated from field: optional string title = 4;
+   */
+  title?: string | undefined;
+
+  /**
+   * RFC 3339 in UTC with milliseconds
+   *
+   * @generated from field: string first_viewed_at = 5;
+   */
+  firstViewedAt: string;
+
+  /**
+   * RFC 3339 in UTC with milliseconds
+   *
+   * @generated from field: string last_viewed_at = 6;
+   */
+  lastViewedAt: string;
+
+  /**
+   * @generated from field: int32 view_count = 7;
+   */
+  viewCount: number;
+};
+
+/**
+ * A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
+ * user's retention (HistorySettings), counted from the last view.
+ *
+ * @generated from message treehub.v1.HistoryItem
+ */
+export type HistoryItemJson = {
+  /**
+   * "repo" or "pull"
+   *
+   * @generated from field: string kind = 1;
+   */
+  kind?: string;
+
+  /**
+   * "owner/name"
+   *
+   * @generated from field: string repo = 2;
+   */
+  repo?: string;
+
+  /**
+   * pull request number, 0 for a repository
+   *
+   * @generated from field: int32 number = 3;
+   */
+  number?: number;
+
+  /**
+   * pull request title when last viewed
+   *
+   * @generated from field: optional string title = 4;
+   */
+  title?: string;
+
+  /**
+   * RFC 3339 in UTC with milliseconds
+   *
+   * @generated from field: string first_viewed_at = 5;
+   */
+  firstViewedAt?: string;
+
+  /**
+   * RFC 3339 in UTC with milliseconds
+   *
+   * @generated from field: string last_viewed_at = 6;
+   */
+  lastViewedAt?: string;
+
+  /**
+   * @generated from field: int32 view_count = 7;
+   */
+  viewCount?: number;
+};
+
+/**
+ * Describes the message treehub.v1.HistoryItem.
+ * Use `create(HistoryItemSchema)` to create a new message.
+ */
+export const HistoryItemSchema: GenMessage<HistoryItem, {jsonType: HistoryItemJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 9);
+
+/**
+ * @generated from message treehub.v1.ListHistoryResponse
+ */
+export type ListHistoryResponse = Message<"treehub.v1.ListHistoryResponse"> & {
+  /**
+   * last viewed first
+   *
+   * @generated from field: repeated treehub.v1.HistoryItem items = 1;
+   */
+  items: HistoryItem[];
+
+  /**
+   * for the next page; absent on the last one
+   *
+   * @generated from field: optional string next_cursor = 2;
+   */
+  nextCursor?: string | undefined;
+};
+
+/**
+ * @generated from message treehub.v1.ListHistoryResponse
+ */
+export type ListHistoryResponseJson = {
+  /**
+   * last viewed first
+   *
+   * @generated from field: repeated treehub.v1.HistoryItem items = 1;
+   */
+  items?: HistoryItemJson[];
+
+  /**
+   * for the next page; absent on the last one
+   *
+   * @generated from field: optional string next_cursor = 2;
+   */
+  nextCursor?: string;
+};
+
+/**
+ * Describes the message treehub.v1.ListHistoryResponse.
+ * Use `create(ListHistoryResponseSchema)` to create a new message.
+ */
+export const ListHistoryResponseSchema: GenMessage<ListHistoryResponse, {jsonType: ListHistoryResponseJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 10);
+
+/**
+ * @generated from message treehub.v1.RecordViewRequest
+ */
+export type RecordViewRequest = Message<"treehub.v1.RecordViewRequest"> & {
+  /**
+   * @generated from field: optional string title = 1;
+   */
+  title?: string | undefined;
+};
+
+/**
+ * @generated from message treehub.v1.RecordViewRequest
+ */
+export type RecordViewRequestJson = {
+  /**
+   * @generated from field: optional string title = 1;
+   */
+  title?: string;
+};
+
+/**
+ * Describes the message treehub.v1.RecordViewRequest.
+ * Use `create(RecordViewRequestSchema)` to create a new message.
+ */
+export const RecordViewRequestSchema: GenMessage<RecordViewRequest, {jsonType: RecordViewRequestJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 11);
+
+/**
+ * @generated from message treehub.v1.RecordViewResponse
+ */
+export type RecordViewResponse = Message<"treehub.v1.RecordViewResponse"> & {
+  /**
+   * absent when recording is paused
+   *
+   * @generated from field: optional treehub.v1.HistoryItem item = 1;
+   */
+  item?: HistoryItem | undefined;
+
+  /**
+   * @generated from field: bool paused = 2;
+   */
+  paused: boolean;
+};
+
+/**
+ * @generated from message treehub.v1.RecordViewResponse
+ */
+export type RecordViewResponseJson = {
+  /**
+   * absent when recording is paused
+   *
+   * @generated from field: optional treehub.v1.HistoryItem item = 1;
+   */
+  item?: HistoryItemJson;
+
+  /**
+   * @generated from field: bool paused = 2;
+   */
+  paused?: boolean;
+};
+
+/**
+ * Describes the message treehub.v1.RecordViewResponse.
+ * Use `create(RecordViewResponseSchema)` to create a new message.
+ */
+export const RecordViewResponseSchema: GenMessage<RecordViewResponse, {jsonType: RecordViewResponseJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 12);
+
+/**
+ * @generated from message treehub.v1.HistorySettings
+ */
+export type HistorySettings = Message<"treehub.v1.HistorySettings"> & {
+  /**
+   * 1..365, 30 by default
+   *
+   * @generated from field: int32 retention_days = 1;
+   */
+  retentionDays: number;
+
+  /**
+   * views aren't recorded while paused
+   *
+   * @generated from field: bool paused = 2;
+   */
+  paused: boolean;
+};
+
+/**
+ * @generated from message treehub.v1.HistorySettings
+ */
+export type HistorySettingsJson = {
+  /**
+   * 1..365, 30 by default
+   *
+   * @generated from field: int32 retention_days = 1;
+   */
+  retentionDays?: number;
+
+  /**
+   * views aren't recorded while paused
+   *
+   * @generated from field: bool paused = 2;
+   */
+  paused?: boolean;
+};
+
+/**
+ * Describes the message treehub.v1.HistorySettings.
+ * Use `create(HistorySettingsSchema)` to create a new message.
+ */
+export const HistorySettingsSchema: GenMessage<HistorySettings, {jsonType: HistorySettingsJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 13);
 

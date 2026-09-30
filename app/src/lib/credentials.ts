@@ -193,10 +193,8 @@ function requestDetail(response: ResponseInfo): Detail {
     // Already a path
   }
   const method = (response.method || 'GET').toUpperCase();
-  return {
-    label: 'Request',
-    value: `${response.label || describeRequest(method, response.url)} (${method} ${path.replace(/[?&]_=\d+/, '')})`
-  };
+  const where = path ? ` (${method} ${path.replace(/[?&]_=\d+/, '')})` : '';
+  return {label: 'Request', value: `${response.label || describeRequest(method, response.url)}${where}`};
 }
 
 // ---------- Times ----------
@@ -482,7 +480,7 @@ function explainSession(response: ResponseInfo, credential: CredentialInfo, now:
     return make(
       'session_expired',
       'Your TreeHub sign-in expired',
-      'TreeHub sign-ins last 30 days. Sign in again to keep your bookmarks and review queue in sync.',
+      'TreeHub sign-ins last 30 days. Sign in again to keep your bookmarks, review queue and history in sync.',
       [{label: 'Expired', value: formatTime(session.expiresAt, now)}]
     );
   }

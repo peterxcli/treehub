@@ -1,6 +1,8 @@
 const HUB_STORE = {
   AUTH: 'treehub.auth',
-  HUB: 'treehub.hub'
+  HUB: 'treehub.hub',
+  // Why the user was signed out without asking, e.g. an expired session (app/src/lib/credentials.ts)
+  SIGNIN_PROBLEM: 'treehub.signin_problem'
 };
 const HUB_PR_PATH = /^\/[^\/]+\/[^\/]+\/pull\/(\d+)(?:\/|$)/;
 const HUB_FLASH_MS = 6000;
@@ -10,7 +12,9 @@ const HUB_FLASH_MS = 6000;
  *
  * The background worker (app/src/background.ts) signs in and owns the bookmarks and the queue. This view shows
  * them from chrome.storage, which the worker keeps current, and asks the worker to change them. It also tells the
- * worker when a queued pull request is looked at, which settles its replies, mentions and updates.
+ * worker when a queued pull request is looked at, which settles its replies, mentions and updates, and which
+ * repositories and pull requests the user opens, for their history. When the user was signed out without asking
+ * (e.g. the session expired), a notice in the sidebar says so.
  */
 class HubView {
   constructor($dom) {
@@ -24,6 +28,7 @@ class HubView {
     this.$queue = $dom.find('.treehub-queue-toggle').hide();
     this.$account = $dom.find('.treehub-account');
     this.$flash = $dom.find('.treehub-hub-flash');
+    this.$signinNotice = $dom.find('.treehub-signin-notice');
 
     this.$bookmark.click((event) => {
       event.preventDefault();
@@ -42,12 +47,20 @@ class HubView {
       .on('click', '.treehub-open-dashboard', () => this._openDashboard())
       .on('click', '.treehub-sign-out', () => this._signOut());
     this.$flash.click(() => this.$flash.removeClass('visible'));
+    this.$signinNotice
+      .on('click', '.treehub-signin-notice-signin', (event) => this._signInAgain($(event.currentTarget)))
+      .on('click', '.treehub-signin-notice-dismiss', () => {
+        this._send({type: 'treehub:dismissSigninProblem'}).catch(() => {});
+      });
 
     $(extStore).on(EVENT.STORE_CHANGE, (event, changes) => {
-      if (changes[HUB_STORE.AUTH] || changes[HUB_STORE.HUB]) this._load();
+      if (changes[HUB_STORE.AUTH] || changes[HUB_STORE.HUB] || changes[HUB_STORE.SIGNIN_PROBLEM]) this._load();
     });
     // Switching tabs: looked at the pull request until now, or looking at it again
-    document.addEventListener('visibilitychange', () => this._seen(this.pull));
+    document.addEventListener('visibilitychange', () => {
+      this._seen(this.pull);
+      if (document.visibilityState === 'visible') this._recordView();
+    });
   }
 
   async init() {
@@ -68,19 +81,47 @@ class HubView {
       this._seen(previous);
       if (document.visibilityState === 'visible') this._seen(this.pull);
     }
+    this._recordView();
     this._render();
+  }
+
+  /**
+   * Adds the pull request, or else the repository, of the page to the user's history (when signed in and the page
+   * is shown). The worker skips pages viewed again just now.
+   */
+  _recordView() {
+    if (!this.auth || !this.repo || document.visibilityState !== 'visible') return;
+    const view = this.pull
+      ? {kind: 'pull', repo: this.pull.repo, number: this.pull.number, title: this._pullTitle()}
+      : {kind: 'repo', repo: this.repo};
+    this._send(Object.assign({type: 'treehub:recordView'}, view)).catch(() => {
+      // Not worth bothering: the next view is recorded
+    });
   }
 
   async _load() {
     const auth = await extStore.get(HUB_STORE.AUTH);
     const hub = await extStore.get(HUB_STORE.HUB);
+    const signinProblem = await extStore.get(HUB_STORE.SIGNIN_PROBLEM);
+    const signedIn = !this.auth && auth;
     this.auth = auth || null;
     this.hub = auth && hub && hub.login === auth.account.login ? hub : null;
+    this.signinProblem = !auth && signinProblem ? signinProblem : null;
     this._render();
+    // Signed in on this page: it counts as viewed
+    if (signedIn) this._recordView();
   }
 
   _render() {
     const auth = this.auth;
+    const problem = this.signinProblem;
+    this.$signinNotice.prop('hidden', !problem);
+    if (problem) {
+      this.$signinNotice.find('.treehub-signin-notice-title').text(problem.title);
+      this.$signinNotice.find('.treehub-signin-notice-text').text(
+        `${problem.summary} Until then, TreeHub doesn't record your history, bookmarks or review queue.`
+      );
+    }
     this.$account.toggleClass('signed-in', !!auth);
     if (auth) {
       const {login, avatarUrl} = auth.account;
@@ -184,6 +225,18 @@ class HubView {
       this._fail(err);
     } finally {
       $button.prop('disabled', false).find('span').text('Sign in with GitHub');
+    }
+  }
+
+  async _signInAgain($button) {
+    $button.prop('disabled', true).text('Waiting for GitHub…');
+    try {
+      await this._send({type: 'treehub:signIn'});
+      await this._load();
+    } catch (err) {
+      this._fail(err);
+    } finally {
+      $button.prop('disabled', false).text('Sign in again');
     }
   }
 

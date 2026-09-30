@@ -10,6 +10,17 @@ type Bookmark struct {
 	CreatedAt string
 }
 
+type History struct {
+	Login         string
+	Kind          string
+	Repo          string
+	Number        int64
+	Title         *string
+	FirstViewedAt string
+	LastViewedAt  string
+	ViewCount     int64
+}
+
 type QueueItem struct {
 	Login      string
 	Repo       string
@@ -20,11 +31,13 @@ type QueueItem struct {
 }
 
 type User struct {
-	Login        string
-	GithubID     int64
-	Name         *string
-	AvatarUrl    *string
-	TokenVersion int64
-	CreatedAt    string
-	LastLoginAt  *string
+	Login                string
+	GithubID             int64
+	Name                 *string
+	AvatarUrl            *string
+	TokenVersion         int64
+	CreatedAt            string
+	LastLoginAt          *string
+	HistoryRetentionDays int64
+	HistoryPaused        int64
 }

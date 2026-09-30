@@ -64,6 +64,20 @@ async function handle(request: Request): Promise<unknown> {
       return hub.explainResponse(request.response, request.source);
     case 'treehub:tokenAccepted':
       return hub.recordTokenAccepted(request.source, request.scopes);
+    case 'treehub:dismissSigninProblem':
+      return hub.dismissSigninProblem();
+    case 'treehub:recordView':
+      return hub.recordView({kind: request.kind, repo: request.repo, number: request.number}, request.title);
+    case 'treehub:listHistory':
+      return hub.listHistory({limit: request.limit, cursor: request.cursor, kind: request.kind});
+    case 'treehub:deleteHistoryEntry':
+      return hub.deleteHistoryEntry({kind: request.kind, repo: request.repo, number: request.number});
+    case 'treehub:clearHistory':
+      return hub.clearHistory();
+    case 'treehub:getHistorySettings':
+      return hub.getHistorySettings();
+    case 'treehub:setHistorySettings':
+      return hub.setHistorySettings({retentionDays: request.retentionDays, paused: request.paused});
   }
   throw new Error(`Unknown request: ${(request as {type?: string}).type}`);
 }

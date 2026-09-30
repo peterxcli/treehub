@@ -103,23 +103,31 @@ func repoParam(r *http.Request) (string, error) {
 	return owner + "/" + name, nil
 }
 
-// numberParam returns the pull request number from the path: 1..2^31-1,
-// digits only.
-func numberParam(r *http.Request) (int64, error) {
-	s := param(r, "number")
-	invalid := badRequest("invalid_number", errors.New("expected a pull request number between 1 and 2147483647"))
+// parsePositive parses 1..2^31-1 written with digits only, without a sign or
+// leading zeros, so every number has exactly one spelling.
+func parsePositive(s string) (int64, bool) {
 	if len(s) < 1 || len(s) > 10 || s[0] == '0' {
-		return 0, invalid
+		return 0, false
 	}
 	var n int64
 	for i := 0; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
-			return 0, invalid
+			return 0, false
 		}
 		n = n*10 + int64(s[i]-'0')
 	}
 	if n > math.MaxInt32 {
-		return 0, invalid
+		return 0, false
+	}
+	return n, true
+}
+
+// numberParam returns the pull request number from the path: 1..2^31-1,
+// digits only.
+func numberParam(r *http.Request) (int64, error) {
+	n, ok := parsePositive(param(r, "number"))
+	if !ok {
+		return 0, badRequest("invalid_number", errors.New("expected a pull request number between 1 and 2147483647"))
 	}
 	return n, nil
 }

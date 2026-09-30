@@ -1622,6 +1622,43 @@ html.treehub-ff-opened {
     }
   }
 
+  // Signed out without asking (view.hub.js)
+  .treehub-signin-notice {
+    position: absolute;
+    top: @header-height + 8px;
+    right: 8px;
+    left: 8px;
+    z-index: 3;
+    padding: 10px 12px;
+    border: 1px solid var(--borderColor-attention-muted, #d4a72c66);
+    border-radius: 6px;
+    background-color: var(--bgColor-attention-muted, #fff8c5);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+    color: var(--fgColor-default, @dark);
+    font-size: 12px;
+    line-height: 1.4;
+
+    &[hidden] {
+      display: none;
+    }
+
+    .treehub-signin-notice-title {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    p {
+      margin: 0 0 8px;
+    }
+
+    .treehub-signin-notice-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+  }
+
   .treehub-settings-view .treehub-account {
     .treehub-sign-in {
       display: inline-flex;

@@ -52,6 +52,7 @@ func newHandler() (http.Handler, error) {
 			DevAuth:             cloudflare.Getenv("DEV_AUTH") == "true",
 			MaxBookmarks:        api.DefaultMaxBookmarks,
 			MaxQueueItems:       api.DefaultMaxQueueItems,
+			MaxHistoryItems:     api.DefaultMaxHistoryItems,
 		},
 	}
 	return srv.Handler(), nil

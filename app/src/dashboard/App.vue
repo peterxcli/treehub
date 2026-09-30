@@ -6,14 +6,19 @@ import {needsAttention, prKey} from '../lib/status.ts';
 import AccountMenu from './components/AccountMenu.vue';
 import BookmarksView from './components/BookmarksView.vue';
 import CredentialProblemCard from './components/CredentialProblemCard.vue';
+import HistoryView from './components/HistoryView.vue';
 import Octicon from './components/Octicon.vue';
 import QueueView from './components/QueueView.vue';
 import SignIn from './components/SignIn.vue';
 import Toasts from './components/Toasts.vue';
 import {init, loaded, problem, request, state} from './store.ts';
 
-type View = 'queue' | 'bookmarks';
-const readView = (): View => (location.hash === '#bookmarks' ? 'bookmarks' : 'queue');
+type View = 'queue' | 'bookmarks' | 'history';
+const VIEW_TITLES: Record<View, string> = {queue: 'Review queue', bookmarks: 'Bookmarks', history: 'History'};
+const readView = (): View => {
+  const hash = location.hash.slice(1);
+  return hash === 'bookmarks' || hash === 'history' ? hash : 'queue';
+};
 const view = ref<View>(readView());
 const onHashChange = () => (view.value = readView());
 
@@ -58,7 +63,7 @@ watch(
 
 watch(
   [attentionCount, view],
-  ([count]) => (document.title = `${count ? `(${count}) ` : ''}${view.value === 'bookmarks' ? 'Bookmarks' : 'Review queue'} · TreeHub`),
+  ([count]) => (document.title = `${count ? `(${count}) ` : ''}${VIEW_TITLES[view.value]} · TreeHub`),
   {immediate: true}
 );
 </script>
@@ -82,6 +87,10 @@ watch(
         Bookmarks
         <span class="count">{{ bookmarkCount }}</span>
       </a>
+      <a href="#history" :class="{selected: view === 'history'}" :aria-current="view === 'history' ? 'page' : undefined">
+        <Octicon name="history" />
+        History
+      </a>
     </nav>
     <div class="spacer" />
     <AccountMenu v-if="account" :account="account" />
@@ -91,6 +100,7 @@ watch(
     <template v-if="loaded">
       <SignIn v-if="!account" />
       <BookmarksView v-else-if="view === 'bookmarks'" />
+      <HistoryView v-else-if="view === 'history'" />
       <QueueView v-else />
     </template>
   </main>

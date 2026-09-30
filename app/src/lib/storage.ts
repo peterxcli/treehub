@@ -68,6 +68,24 @@ export interface Statuses {
   problem?: CredentialProblem;
 }
 
+/** A repository or pull request the user viewed, from the backend's history. */
+export interface HistoryEntry {
+  kind: 'repo' | 'pull';
+  repo: string; // "owner/name"
+  number: number; // 0 for a repository
+  title?: string;
+  firstViewedAt: string;
+  lastViewedAt: string;
+  viewCount: number;
+}
+
+export interface HistorySettings {
+  /** Entries are kept this many days after their last view. */
+  retentionDays: number;
+  /** Views aren't recorded while paused. */
+  paused: boolean;
+}
+
 /** By token fingerprint (lib/credentials.ts): when GitHub last accepted the token, and its scopes then. */
 export type TokenSeen = Record<string, {at: string; scopes?: string}>;
 

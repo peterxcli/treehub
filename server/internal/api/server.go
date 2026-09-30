@@ -12,16 +12,20 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	treehubv1 "github.com/peterxcli/treehub/server/gen/go/treehub/v1"
 	"github.com/peterxcli/treehub/server/internal/auth"
 	"github.com/peterxcli/treehub/server/internal/db"
 )
 
-// Per-user row limits, checked before a new row is inserted.
+// Per-user row limits. Bookmarks and queue items are checked before a new row
+// is inserted; the history never refuses a view and drops its oldest rows
+// instead.
 const (
-	DefaultMaxBookmarks  = 1000
-	DefaultMaxQueueItems = 500
+	DefaultMaxBookmarks    = 1000
+	DefaultMaxQueueItems   = 500
+	DefaultMaxHistoryItems = 5000
 )
 
 type Config struct {
@@ -31,8 +35,9 @@ type Config struct {
 	// DevAuth enables GET /auth/dev-login (local development only).
 	DevAuth bool
 	// Limits per user; zero means the default.
-	MaxBookmarks  int64
-	MaxQueueItems int64
+	MaxBookmarks    int64
+	MaxQueueItems   int64
+	MaxHistoryItems int64
 }
 
 func (c Config) maxBookmarks() int64 {
@@ -49,11 +54,28 @@ func (c Config) maxQueueItems() int64 {
 	return DefaultMaxQueueItems
 }
 
+func (c Config) maxHistoryItems() int64 {
+	if c.MaxHistoryItems > 0 {
+		return c.MaxHistoryItems
+	}
+	return DefaultMaxHistoryItems
+}
+
 type Server struct {
 	Q        *db.Queries
 	Sessions *auth.Sessions
 	GitHub   *auth.GitHub
 	Cfg      Config
+	// Now is the clock of the history (its timestamps and retention); nil
+	// means time.Now. Tests move it.
+	Now func() time.Time
+}
+
+func (s *Server) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
 }
 
 // Handler returns the routed HTTP handler with CORS applied to every response.
@@ -82,6 +104,15 @@ func (s *Server) Handler() http.Handler {
 	rt.handle("PUT", "/api/queue/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.putQueueItem)))
 	rt.handle("DELETE", "/api/queue/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.deleteQueueItem)))
 	rt.handle("POST", "/api/queue/{owner}/{name}/{number}/seen", s.authed(jsonEndpoint(s.markQueueItemSeen)))
+
+	rt.handle("GET", "/api/history", s.authed(jsonEndpoint(s.listHistory)))
+	rt.handle("DELETE", "/api/history", s.authed(jsonEndpoint(s.clearHistory)))
+	rt.handle("GET", "/api/history/settings", s.authed(jsonEndpoint(s.getHistorySettings)))
+	rt.handle("PUT", "/api/history/settings", s.authed(jsonEndpoint(s.putHistorySettings)))
+	rt.handle("PUT", "/api/history/repos/{owner}/{name}", s.authed(jsonEndpoint(s.recordView(historyRepo))))
+	rt.handle("DELETE", "/api/history/repos/{owner}/{name}", s.authed(jsonEndpoint(s.deleteHistoryItem(historyRepo))))
+	rt.handle("PUT", "/api/history/pulls/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.recordView(historyPull))))
+	rt.handle("DELETE", "/api/history/pulls/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.deleteHistoryItem(historyPull))))
 
 	return withCORS(rt)
 }
@@ -217,4 +248,15 @@ func queueItemProto(q db.QueueItem) *treehubv1.QueueItem {
 	return &treehubv1.QueueItem{
 		Repo: q.Repo, Number: int32(q.Number), Title: q.Title, AddedAt: q.AddedAt, LastSeenAt: q.LastSeenAt,
 	}
+}
+
+func historyItemProto(h db.History) *treehubv1.HistoryItem {
+	return &treehubv1.HistoryItem{
+		Kind: h.Kind, Repo: h.Repo, Number: int32(h.Number), Title: h.Title,
+		FirstViewedAt: h.FirstViewedAt, LastViewedAt: h.LastViewedAt, ViewCount: int32(h.ViewCount),
+	}
+}
+
+func historySettingsProto(u *db.User) *treehubv1.HistorySettings {
+	return &treehubv1.HistorySettings{RetentionDays: int32(u.HistoryRetentionDays), Paused: u.HistoryPaused != 0}
 }

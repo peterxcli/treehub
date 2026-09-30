@@ -1,9 +1,10 @@
 # TreeHub backend
 
 A Cloudflare Worker (Go compiled with TinyGo to Wasm) and a D1 database that store, per
-GitHub user, the TreeHub extension's repository **bookmarks** and pull request **review
-queue** (with a per-PR "last seen" time). Pull request statuses are computed by the
-extension; the server never stores GitHub tokens.
+GitHub user, the TreeHub extension's repository **bookmarks**, pull request **review
+queue** (with a per-PR "last seen" time) and **history** of viewed repositories and pull
+requests. Pull request statuses are computed by the extension; the server never stores
+GitHub tokens.
 
 | Layer | Tech |
 | --- | --- |
@@ -26,15 +27,22 @@ protojson does not work under TinyGo). The extension parses responses with proto
 | GET | `/auth/github/callback` | 302 to `https://<ext>.chromiumapp.org/github#session=…&github_token=…&login=…&nonce=…` (or `#error=…&nonce=…`) |
 | GET | `/auth/dev-login?ext=&nonce=&login=` | like the callback without `github_token`; only with `DEV_AUTH=true` |
 | GET | `/api/me` | `MeResponse` |
-| DELETE | `/api/me` | deletes the account with its bookmarks and queue (cascade) → `OkResponse`; its sessions stop working, a later sign-in starts an empty account |
+| DELETE | `/api/me` | deletes the account with its bookmarks, queue and history (cascade) → `OkResponse`; its sessions stop working, a later sign-in starts an empty account |
 | POST | `/api/logout-all` | revokes all sessions → `OkResponse` |
 | GET / PUT / DELETE | `/api/bookmarks`, `/api/bookmarks/{owner}/{name}` | list (newest first) / add (idempotent) / remove |
 | GET / PUT / DELETE | `/api/queue`, `/api/queue/{owner}/{name}/{number}` | list / add (body `PutQueueItemRequest`, optional title) / remove |
 | POST | `/api/queue/{owner}/{name}/{number}/seen` | sets `last_seen_at` → `QueueItem` (404 if not queued) |
+| GET | `/api/history?limit=&cursor=&kind=` | `ListHistoryResponse`, last viewed first: `limit` 1–100 (default 50), `kind` `repo` or `pull`; pass `next_cursor` back as `cursor` for the next page |
+| PUT | `/api/history/repos/{owner}/{name}`, `/api/history/pulls/{owner}/{name}/{number}` | records a view (body `RecordViewRequest`, optional title) → `RecordViewResponse`; stores nothing and answers `paused` while paused |
+| DELETE | `/api/history/repos/{owner}/{name}`, `/api/history/pulls/{owner}/{name}/{number}` | removes one entry (idempotent) → `OkResponse` |
+| DELETE | `/api/history` | clears the history → `OkResponse` |
+| GET / PUT | `/api/history/settings` | `HistorySettings`: `retention_days` 1–365 (default 30), `paused`; a PUT prunes with the new retention right away |
 
-Errors are `ErrorResponse` (`login_required`, `invalid_repo`, `invalid_number`, `invalid_body`,
-`not_found`, `method_not_allowed`, `limit_reached`, `internal`, …). Limits: 1000 bookmarks and
-500 queued pull requests per user.
+Errors are `ErrorResponse` (`login_required`, `invalid_request`, `invalid_repo`, `invalid_number`,
+`invalid_body`, `not_found`, `method_not_allowed`, `limit_reached`, `internal`, …). Limits per
+user: 1000 bookmarks, 500 queued pull requests, and the 5000 most recently viewed history
+entries (a new one pushes out the oldest; views are never refused). History entries expire
+`retention_days` after their last view.
 
 ## Local development
 
@@ -44,7 +52,7 @@ Needs Node 20+, Go 1.26, TinyGo 0.42, and for code generation `buf`, `sqlc` and
 ```bash
 npm install
 cp .dev.vars.example .dev.vars      # put a random SESSION_SECRET in it (openssl rand -hex 32)
-npm run db:migrate:local
+npm run db:migrate:local            # again whenever migrations/ gains a file
 make dev                            # builds the Wasm, then wrangler dev on http://localhost:8787
 node scripts/smoke.mjs http://localhost:8787   # end-to-end check (needs DEV_AUTH=true)
 ```
@@ -78,4 +86,6 @@ migrations). After editing the `.proto` or `query.sql`, run `make gen`. `wrangle
    curl https://treehub-api.<your-subdomain>.workers.dev/api/health
    ```
 
-Never set `DEV_AUTH` in production. The Wasm bundle is about 0.75 MB gzipped (free-plan limit 3 MB).
+Apply new migrations (`npm run db:migrate:remote`) before deploying the Worker that needs
+them: it reads their columns on every signed-in request. Never set `DEV_AUTH` in production.
+The Wasm bundle is about 0.78 MB gzipped (free-plan limit 3 MB).

@@ -60,3 +60,34 @@ message ErrorResponse {
 message OkResponse {
   bool ok = 1;
 }
+
+// A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
+// user's retention (HistorySettings), counted from the last view.
+message HistoryItem {
+  string kind = 1; // "repo" or "pull"
+  string repo = 2; // "owner/name"
+  int32 number = 3; // pull request number, 0 for a repository
+  optional string title = 4; // pull request title when last viewed
+  string first_viewed_at = 5; // RFC 3339 in UTC with milliseconds
+  string last_viewed_at = 6; // RFC 3339 in UTC with milliseconds
+  int32 view_count = 7;
+}
+
+message ListHistoryResponse {
+  repeated HistoryItem items = 1; // last viewed first
+  optional string next_cursor = 2; // for the next page; absent on the last one
+}
+
+message RecordViewRequest {
+  optional string title = 1;
+}
+
+message RecordViewResponse {
+  optional HistoryItem item = 1; // absent when recording is paused
+  bool paused = 2;
+}
+
+message HistorySettings {
+  int32 retention_days = 1; // 1..365, 30 by default
+  bool paused = 2; // views aren't recorded while paused
+}

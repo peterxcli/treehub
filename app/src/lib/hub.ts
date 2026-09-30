@@ -6,6 +6,7 @@ import {ApiError} from './api.ts';
 import {signIn as authorize} from './auth.ts';
 import {
   explainCredentialProblem,
+  readSession,
   tokenFingerprint,
   type CredentialInfo,
   type CredentialProblem,
@@ -21,6 +22,8 @@ import {
   type Account,
   type Auth,
   type BookmarkEntry,
+  type HistoryEntry,
+  type HistorySettings,
   type Hub,
   type QueueEntry,
   type TokenSeen
@@ -29,6 +32,10 @@ import {
 const REPO_TTL_MS = 30 * 60 * 1000;
 // Records that GitHub accepted a token at most this often (unless its scopes change)
 const TOKEN_SEEN_THROTTLE_MS = 10 * 60 * 1000;
+// Viewing the same page again within this time isn't recorded again
+const VIEW_THROTTLE_MS = 60 * 1000;
+// While the history is paused, views aren't sent; asks again after this time (it may be resumed elsewhere)
+const PAUSED_RECHECK_MS = 30 * 60 * 1000;
 // Visiting a pull request again within this time does not record another visit.
 const SEEN_THROTTLE_MS = 30 * 1000;
 
@@ -50,6 +57,19 @@ let hubVersion = 0;
 async function requireAuth(): Promise<Auth> {
   const {auth} = await load();
   if (!auth) throw new ApiError(401, 'login_required', 'Sign in with GitHub to use bookmarks and the review queue.');
+
+  // An expired session can't work anymore: sign out now and explain why, rather than wait for the server to refuse it
+  const session = readSession(auth.session);
+  if (session && session.expiresAt && Date.parse(session.expiresAt) <= Date.now()) {
+    const problem = explainCredentialProblem(
+      {service: 'treehub', status: 401, label: 'Checking your TreeHub sign-in'},
+      {source: 'signin', login: auth.account.login, session: auth.session}
+    );
+    await clearAccount(problem);
+    throw Object.assign(new ApiError(401, 'login_required', problem ? problem.title : 'Your TreeHub sign-in expired.'), {
+      problem
+    });
+  }
   return auth;
 }
 
@@ -103,6 +123,12 @@ async function credentialFor(source: 'settings' | 'signin' | 'none'): Promise<Cr
     lastAccepted = ((values[KEYS.tokenSeen] || {}) as TokenSeen)[await tokenFingerprint(token)] || null;
   }
   return {source, token, lastAccepted, login: auth && auth.account.login, session: auth && auth.session};
+}
+
+/** Hides the explanation of an unwanted sign-out (sidebar popup, toolbar status): the user saw it. */
+export async function dismissSigninProblem(): Promise<void> {
+  await exclusive(() => save({signinProblem: null}));
+  await updateBadge();
 }
 
 /** Explains why GitHub refused a request of the content script (src/view.credentials.js). */
@@ -385,6 +411,72 @@ async function runRefresh(refs?: PRRef[]): Promise<void> {
   await updateBadge();
 }
 
+// ---------- History ----------
+
+const recentViews = new Map<string, number>();
+let pausedUntil = 0;
+
+function notePaused(paused: boolean): void {
+  pausedUntil = paused ? Date.now() + PAUSED_RECHECK_MS : 0;
+}
+
+/**
+ * Records that the user viewed a repository or pull request (src/view.hub.js). Quietly does nothing when signed
+ * out, while the history is paused, or for a page viewed again just now.
+ */
+export async function recordView(view: api.ViewRef, title?: string): Promise<void> {
+  let auth: Auth;
+  try {
+    auth = await requireAuth();
+  } catch {
+    return;
+  }
+  if (Date.now() < pausedUntil) return;
+
+  const key = `${view.kind}:${view.repo.toLowerCase()}#${view.number || 0}`;
+  if (Date.now() - (recentViews.get(key) || 0) < VIEW_THROTTLE_MS) return;
+  recentViews.set(key, Date.now());
+  // Keep the map small in a long-lived worker
+  if (recentViews.size > 500) recentViews.clear();
+
+  const {paused} = await backend(api.recordView(auth.session, view, title));
+  notePaused(paused);
+}
+
+export async function listHistory(options: {limit?: number; cursor?: string; kind?: 'repo' | 'pull'}): Promise<{
+  entries: HistoryEntry[];
+  nextCursor?: string;
+}> {
+  const auth = await requireAuth();
+  return backend(api.listHistory(auth.session, options));
+}
+
+export async function deleteHistoryEntry(view: api.ViewRef): Promise<void> {
+  const auth = await requireAuth();
+  await backend(api.deleteHistoryEntry(auth.session, view));
+  recentViews.delete(`${view.kind}:${view.repo.toLowerCase()}#${view.number || 0}`);
+}
+
+export async function clearHistory(): Promise<void> {
+  const auth = await requireAuth();
+  await backend(api.clearHistory(auth.session));
+  recentViews.clear();
+}
+
+export async function getHistorySettings(): Promise<HistorySettings> {
+  const auth = await requireAuth();
+  const settings = await backend(api.getHistorySettings(auth.session));
+  notePaused(settings.paused);
+  return settings;
+}
+
+export async function setHistorySettings(settings: HistorySettings): Promise<HistorySettings> {
+  const auth = await requireAuth();
+  const stored = await backend(api.putHistorySettings(auth.session, settings));
+  notePaused(stored.paused);
+  return stored;
+}
+
 /** Syncs and refreshes when the statuses are older than `ms` (or were never fetched). */
 export async function refreshIfOlderThan(ms: number): Promise<void> {
   const {auth, statuses} = await load();
@@ -395,9 +487,12 @@ export async function refreshIfOlderThan(ms: number): Promise<void> {
   await refreshStatuses();
 }
 
-/** Shows how many queued pull requests need attention on the toolbar icon. */
+/**
+ * Shows on the toolbar icon how many queued pull requests need attention, or a problem: GitHub refusing the token
+ * (red), or a sign-out the user didn't ask for (orange).
+ */
 export async function updateBadge(): Promise<void> {
-  const {auth, hub, statuses} = await load();
+  const {auth, hub, statuses, signinProblem} = await load();
   let count = 0;
   if (auth && hub && statuses && statuses.login === auth.account.login) {
     count = hub.queue.filter((e) => {
@@ -406,6 +501,13 @@ export async function updateBadge(): Promise<void> {
     }).length;
   }
   await chrome.action.setBadgeTextColor({color: '#ffffff'});
+  // Signed out without asking (e.g. the session expired): nothing is recorded or synced until signing in again
+  if (!auth && signinProblem) {
+    await chrome.action.setBadgeBackgroundColor({color: '#bf8700'});
+    await chrome.action.setBadgeText({text: '!'});
+    await chrome.action.setTitle({title: `TreeHub: ${signinProblem.title}. Sign in again to keep your data in sync.`});
+    return;
+  }
   // GitHub refusing the credentials comes first: statuses can't be trusted
   const problem = auth && statuses && statuses.login === auth.account.login ? statuses.problem : undefined;
   if (problem) {

@@ -47,3 +47,19 @@ test('formats relative times', () => {
   assert.match(timeAgo('2026-01-02T12:00:00Z', now), /^on /);
   assert.equal(timeAgo(undefined, now), '');
 });
+
+test('history is grouped by local day', async () => {
+  const {dayLabel, groupByDay} = await import('../app/src/dashboard/format.ts');
+  const now = new Date(2026, 8, 30, 15, 0).getTime(); // Sep 30, 2026 local time
+  const at = (day: number, hour: number) => new Date(2026, 8, day, hour).toISOString();
+  assert.equal(dayLabel(at(30, 1), now), 'Today');
+  assert.equal(dayLabel(at(29, 23), now), 'Yesterday');
+  assert.match(dayLabel(at(27, 12), now), /September 27/);
+  assert.doesNotMatch(dayLabel(at(27, 12), now), /2026/);
+  assert.match(dayLabel(new Date(2025, 11, 31).toISOString(), now), /2025/);
+
+  const items = [at(30, 9), at(30, 8), at(29, 20), at(20, 10)];
+  const groups = groupByDay(items, (item) => item, now);
+  assert.deepEqual(groups.map((g) => [g.label.replace(/.*September 20.*/, 'Sep 20'), g.items.length]),
+    [['Today', 2], ['Yesterday', 1], ['Sep 20', 1]]);
+});

@@ -105,6 +105,8 @@ async function main() {
     check(j.error === "login_required", "error code", j);
     const b = await expectJSON("GET", "/api/bookmarks", 401);
     check(b.error === "login_required", "error code", b);
+    const h = await expectJSON("PUT", "/api/history/repos/octo-org/hello-world", 401);
+    check(h.error === "login_required", "error code", h);
     ok("401 login_required without a token");
   }
 
@@ -186,6 +188,101 @@ async function main() {
     ok("queue PUT / GET / seen / DELETE (+ title keep, 404, validation)");
   }
 
+  // History. Timestamps come from the Worker's clock, so two quick views may
+  // share a millisecond: the order is checked against the listing rule rather
+  // than assumed.
+  {
+    const key = (i) => `${i.kind}:${i.repo}#${i.number ?? 0}`;
+    const listedBefore = (a, b) =>
+      a.last_viewed_at !== b.last_viewed_at
+        ? a.last_viewed_at > b.last_viewed_at
+        : a.kind !== b.kind
+          ? a.kind > b.kind
+          : a.repo.toLowerCase() !== b.repo.toLowerCase()
+            ? a.repo.toLowerCase() > b.repo.toLowerCase()
+            : (a.number ?? 0) > (b.number ?? 0);
+    const stamp = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/;
+
+    const settings = await expectJSON("GET", "/api/history/settings", 200, { token: session });
+    check(settings.retention_days === 30 && settings.paused === undefined, "default history settings", settings);
+    const repo = await expectJSON("PUT", "/api/history/repos/octo-org/Hello-World", 200, { token: session });
+    const first = repo.item;
+    check(repo.paused === undefined && first && first.kind === "repo" && first.repo === "octo-org/Hello-World" && first.number === undefined && first.view_count === 1, "record a repository view", repo);
+    check(stamp.test(first.first_viewed_at) && first.last_viewed_at === first.first_viewed_at, "history timestamps", first);
+    const pull = await expectJSON("PUT", "/api/history/pulls/octo-org/hello-world/42", 200, { token: session, body: { title: "  Smoke test PR  " } });
+    check(pull.item && pull.item.kind === "pull" && pull.item.number === 42 && pull.item.title === "Smoke test PR" && pull.item.view_count === 1, "record a pull request view", pull);
+    const again = await expectJSON("PUT", "/api/history/repos/OCTO-ORG/hello-world", 200, { token: session });
+    check(
+      again.item.view_count === 2 && again.item.repo === "OCTO-ORG/hello-world" && again.item.first_viewed_at === first.first_viewed_at && again.item.last_viewed_at >= first.last_viewed_at,
+      "record the repository again",
+      again,
+    );
+    const kept = await expectJSON("PUT", "/api/history/pulls/octo-org/hello-world/42", 200, { token: session });
+    check(kept.item.view_count === 2 && kept.item.title === "Smoke test PR", "a view without a title keeps it", kept);
+    await expectJSON("PUT", "/api/history/pulls/octo-org/hello-world/43", 200, { token: session, body: { title: "Another" } });
+    ok("history PUT repos / pulls: record, record again (count, times, spelling, title kept)");
+
+    const all = await expectJSON("GET", "/api/history", 200, { token: session });
+    const keys = (all.items || []).map(key);
+    check(all.next_cursor === undefined && keys.length === 3, "GET history", all);
+    for (const k of ["repo:OCTO-ORG/hello-world#0", "pull:octo-org/hello-world#42", "pull:octo-org/hello-world#43"]) {
+      check(keys.includes(k), `history lacks ${k}`, keys);
+    }
+    check(all.items.every((it, i) => i === 0 || listedBefore(all.items[i - 1], it)), "history order", all.items);
+    const paged = [];
+    let cursor;
+    do {
+      const q = new URLSearchParams({ limit: "1" });
+      if (cursor) q.set("cursor", cursor);
+      const page = await expectJSON("GET", `/api/history?${q}`, 200, { token: session });
+      check((page.items || []).length === 1, "page of one", page);
+      paged.push(key(page.items[0]));
+      cursor = page.next_cursor;
+    } while (cursor && paged.length <= keys.length);
+    check(paged.join() === keys.join(), "pages of one add up to the list", { paged, keys });
+    const pulls = await expectJSON("GET", "/api/history?kind=pull", 200, { token: session });
+    check((pulls.items || []).length === 2 && pulls.items.every((i) => i.kind === "pull"), "kind=pull", pulls);
+    const repos = await expectJSON("GET", "/api/history?kind=repo&limit=1", 200, { token: session });
+    check((repos.items || []).length === 1 && repos.items[0].kind === "repo" && repos.next_cursor === undefined, "kind=repo", repos);
+    for (const q of ["limit=0", "limit=101", "kind=issue", "cursor=!!"]) {
+      const bad = await expectJSON("GET", `/api/history?${q}`, 400, { token: session });
+      check(bad.error === "invalid_request", `GET /api/history?${q}`, bad);
+    }
+    ok("history GET: last viewed first, keyset pages of one, kind filter, 400 on bad parameters");
+
+    const badSettings = await expectJSON("PUT", "/api/history/settings", 400, { token: session, body: { paused: true } });
+    check(badSettings.error === "invalid_body", "settings without retention_days", badSettings);
+    const paused = await expectJSON("PUT", "/api/history/settings", 200, { token: session, body: { retention_days: 7, paused: true } });
+    check(paused.retention_days === 7 && paused.paused === true, "PUT history settings", paused);
+    const stored = await expectJSON("GET", "/api/history/settings", 200, { token: session });
+    check(stored.retention_days === 7 && stored.paused === true, "GET history settings", stored);
+    const skipped = await expectJSON("PUT", "/api/history/pulls/octo-org/hello-world/44", 200, { token: session });
+    check(skipped.paused === true && skipped.item === undefined, "a view while paused", skipped);
+    const whilePaused = await expectJSON("GET", "/api/history", 200, { token: session });
+    check((whilePaused.items || []).length === 3, "a view was stored while paused", whilePaused);
+    const resumed = await expectJSON("PUT", "/api/history/settings", 200, { token: session, body: { retention_days: 30 } });
+    check(resumed.retention_days === 30 && resumed.paused === undefined, "resume", resumed);
+    ok("history settings: validation, pause (nothing recorded), resume");
+
+    for (let i = 0; i < 2; i++) {
+      const del = await expectJSON("DELETE", "/api/history/pulls/octo-org/hello-world/43", 200, { token: session });
+      check(del.ok === true, "DELETE history pull request", del);
+    }
+    const delRepo = await expectJSON("DELETE", "/api/history/repos/octo-org/HELLO-WORLD", 200, { token: session });
+    check(delRepo.ok === true, "DELETE history repository", delRepo);
+    let list = await expectJSON("GET", "/api/history", 200, { token: session });
+    check((list.items || []).map(key).join() === "pull:octo-org/hello-world#42", "history after DELETE", list);
+    const cleared = await expectJSON("DELETE", "/api/history", 200, { token: session });
+    check(cleared.ok === true, "DELETE /api/history", cleared);
+    list = await expectJSON("GET", "/api/history", 200, { token: session });
+    check((list.items || []).length === 0, "history after clearing", list);
+    const badRepo = await expectJSON("PUT", "/api/history/repos/-bad/repo", 400, { token: session });
+    check(badRepo.error === "invalid_repo", "invalid repo", badRepo);
+    const badNumber = await expectJSON("DELETE", "/api/history/pulls/octo-org/hello-world/0", 400, { token: session });
+    check(badNumber.error === "invalid_number", "invalid number", badNumber);
+    ok("history DELETE one (idempotent, case-insensitive) and clear (+ validation)");
+  }
+
   // A rename keeps data and sessions, which needs D1 to run ON UPDATE CASCADE.
   // The dev login id comes from the lowercased handle, so another spelling is
   // the same account renamed (a case-only rename, done through a parked name).
@@ -193,6 +290,7 @@ async function main() {
     const repo = "octo-org/rename-check";
     await expectJSON("PUT", `/api/bookmarks/${repo}`, 200, { token: session });
     await expectJSON("PUT", "/api/queue/octo-org/rename-check/7", 200, { token: session, body: { title: "Rename check" } });
+    await expectJSON("PUT", "/api/history/pulls/octo-org/rename-check/7", 200, { token: session, body: { title: "Rename check" } });
     const renamed = login.toUpperCase();
     await devLogin(renamed);
     const me = await expectJSON("GET", "/api/me", 200, { token: session });
@@ -201,9 +299,12 @@ async function main() {
     check((list.bookmarks || []).some((b) => b.repo === repo), "bookmark lost by the rename", list);
     const queue = await expectJSON("GET", "/api/queue", 200, { token: session });
     check((queue.items || []).some((q) => q.number === 7 && q.title === "Rename check"), "queue item lost by the rename", queue);
+    const history = await expectJSON("GET", "/api/history", 200, { token: session });
+    check((history.items || []).some((h) => h.kind === "pull" && h.number === 7 && h.title === "Rename check"), "history entry lost by the rename", history);
     await expectJSON("DELETE", `/api/bookmarks/${repo}`, 200, { token: session });
     await expectJSON("DELETE", "/api/queue/octo-org/rename-check/7", 200, { token: session });
-    ok(`rename ${login} -> ${renamed} keeps the session, bookmarks and queue`);
+    await expectJSON("DELETE", "/api/history/pulls/octo-org/rename-check/7", 200, { token: session });
+    ok(`rename ${login} -> ${renamed} keeps the session, bookmarks, queue and history`);
   }
 
   // Sign out everywhere revokes the session.
@@ -221,6 +322,8 @@ async function main() {
     const before = await devLogin(login);
     await expectJSON("PUT", "/api/bookmarks/octo-org/delete-check", 200, { token: before });
     await expectJSON("PUT", "/api/queue/octo-org/delete-check/1", 200, { token: before, body: { title: "Delete check" } });
+    await expectJSON("PUT", "/api/history/repos/octo-org/delete-check", 200, { token: before });
+    await expectJSON("PUT", "/api/history/settings", 200, { token: before, body: { retention_days: 7, paused: true } });
     const del = await expectJSON("DELETE", "/api/me", 200, { token: before });
     check(del.ok === true, "DELETE /api/me", del);
     const gone = await expectJSON("GET", "/api/me", 401, { token: before });
@@ -233,6 +336,10 @@ async function main() {
     check((list.bookmarks || []).length === 0, "fresh account has old bookmarks", list);
     const queue = await expectJSON("GET", "/api/queue", 200, { token: fresh });
     check((queue.items || []).length === 0, "fresh account has old queue items", queue);
+    const history = await expectJSON("GET", "/api/history", 200, { token: fresh });
+    check((history.items || []).length === 0, "fresh account has old history", history);
+    const settings = await expectJSON("GET", "/api/history/settings", 200, { token: fresh });
+    check(settings.retention_days === 30 && settings.paused === undefined, "fresh account has old history settings", settings);
     const still = await expectJSON("GET", "/api/me", 401, { token: before });
     check(still.error === "login_required", "old session revived by signing up again", still);
     await expectJSON("DELETE", "/api/me", 200, { token: fresh });

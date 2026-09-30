@@ -325,6 +325,7 @@ func TestRenameKeepsDataAndSessions(t *testing.T) {
 	old := e.session("octocat", 1)
 	decode[map[string]any](t, e.do("PUT", "/api/bookmarks/octo-org/tools", old, ""), http.StatusOK)
 	decode[map[string]any](t, e.do("PUT", "/api/queue/octo-org/tools/7", old, `{"title":"Fix the tree"}`), http.StatusOK)
+	decode[map[string]any](t, e.do("PUT", "/api/history/pulls/octo-org/tools/7", old, `{"title":"Fix the tree"}`), http.StatusOK)
 
 	// The account was renamed on GitHub.
 	frag := e.githubLogin(auth.GitHubUser{Login: "octo-renamed", ID: 1})
@@ -340,6 +341,9 @@ func TestRenameKeepsDataAndSessions(t *testing.T) {
 		}
 		if got := e.queueKeys(token); !sameStrings(got, []string{"octo-org/tools#7"}) {
 			t.Fatalf("queue = %v", got)
+		}
+		if got := e.historyKeys(token); !sameStrings(got, []string{"octo-org/tools#7"}) {
+			t.Fatalf("history = %v", got)
 		}
 	}
 	if n := e.count("SELECT COUNT(*) FROM users"); n != 1 {
@@ -358,11 +362,17 @@ func TestRenameKeepsDataAndSessions(t *testing.T) {
 	if got := e.queueKeys(old); len(got) != 1 {
 		t.Fatalf("queue after case change = %v", got)
 	}
+	if got := e.historyKeys(old); len(got) != 1 {
+		t.Fatalf("history after case change = %v", got)
+	}
 	if n := e.count("SELECT COUNT(*) FROM bookmarks WHERE login = 'Octo-Renamed' COLLATE BINARY"); n != 1 {
 		t.Fatalf("bookmark rows with the new spelling: %d", n)
 	}
 	if n := e.count("SELECT COUNT(*) FROM queue_items WHERE login = 'Octo-Renamed' COLLATE BINARY"); n != 1 {
 		t.Fatalf("queue rows with the new spelling: %d", n)
+	}
+	if n := e.count("SELECT COUNT(*) FROM history WHERE login = 'Octo-Renamed' COLLATE BINARY"); n != 1 {
+		t.Fatalf("history rows with the new spelling: %d", n)
 	}
 }
 
@@ -438,7 +448,10 @@ func TestDeleteAccount(t *testing.T) {
 	other := e.session("hubot", 2)
 	decode[map[string]any](t, e.do("PUT", "/api/bookmarks/octo-org/tools", old, ""), http.StatusOK)
 	decode[map[string]any](t, e.do("PUT", "/api/queue/octo-org/tools/7", old, `{"title":"Fix the tree"}`), http.StatusOK)
+	decode[map[string]any](t, e.do("PUT", "/api/history/pulls/octo-org/tools/7", old, ""), http.StatusOK)
+	decode[map[string]any](t, e.do("PUT", "/api/history/settings", old, `{"retention_days":7,"paused":true}`), http.StatusOK)
 	decode[map[string]any](t, e.do("PUT", "/api/bookmarks/octo-org/tools", other, ""), http.StatusOK)
+	decode[map[string]any](t, e.do("PUT", "/api/history/repos/octo-org/tools", other, ""), http.StatusOK)
 
 	wantError(t, e.do("DELETE", "/api/me", "", ""), http.StatusUnauthorized, "login_required")
 	wantOK(t, e.do("DELETE", "/api/me", old, ""))
@@ -448,7 +461,9 @@ func TestDeleteAccount(t *testing.T) {
 		"SELECT COUNT(*) FROM users WHERE github_id = 1":           0,
 		"SELECT COUNT(*) FROM bookmarks WHERE login = 'octocat'":   0,
 		"SELECT COUNT(*) FROM queue_items WHERE login = 'octocat'": 0,
+		"SELECT COUNT(*) FROM history WHERE login = 'octocat'":     0,
 		"SELECT COUNT(*) FROM bookmarks WHERE login = 'hubot'":     1,
+		"SELECT COUNT(*) FROM history WHERE login = 'hubot'":       1,
 	} {
 		if got := e.count(query); got != want {
 			t.Fatalf("%s = %d, want %d", query, got, want)
@@ -472,6 +487,12 @@ func TestDeleteAccount(t *testing.T) {
 	}
 	if got := e.queueKeys(fresh); len(got) != 0 {
 		t.Fatalf("queue = %v", got)
+	}
+	if got := e.historyKeys(fresh); len(got) != 0 {
+		t.Fatalf("history = %v", got)
+	}
+	if s := e.historySettings(fresh); s.RetentionDays != 30 || s.Paused {
+		t.Fatalf("history settings = %v", s)
 	}
 	wantError(t, e.do("GET", "/api/me", old, ""), http.StatusUnauthorized, "login_required")
 }

@@ -58,6 +58,7 @@ func newTestEnv(t *testing.T, cfg Config) *testEnv {
 		Sessions: sessions,
 		GitHub:   &auth.GitHub{ClientID: "client-id", ClientSecret: "client-secret", HTTP: &http.Client{Transport: e.github}},
 		Cfg:      cfg,
+		Now:      func() time.Time { return e.now },
 	}
 	e.h = e.srv.Handler()
 	return e
@@ -222,6 +223,33 @@ func (e *testEnv) queueKeys(token string) []string {
 	keys := []string{}
 	for _, q := range res.Items {
 		keys = append(keys, fmt.Sprintf("%s#%d", q.Repo, q.Number))
+	}
+	return keys
+}
+
+// historyKeys lists the history (one page of up to 100) as "owner/name" for a
+// repository and "owner/name#number" for a pull request.
+func (e *testEnv) historyKeys(token string) []string {
+	e.t.Helper()
+	res := decode[treehubv1.ListHistoryResponse](e.t, e.do("GET", "/api/history?limit=100", token, ""), http.StatusOK)
+	if res.NextCursor != nil {
+		e.t.Fatal("history has more than one page")
+	}
+	return historyItemKeys(e.t, res.Items)
+}
+
+func historyItemKeys(t *testing.T, items []*treehubv1.HistoryItem) []string {
+	t.Helper()
+	keys := []string{}
+	for _, h := range items {
+		switch {
+		case h.Kind == "repo" && h.Number == 0:
+			keys = append(keys, h.Repo)
+		case h.Kind == "pull" && h.Number > 0:
+			keys = append(keys, fmt.Sprintf("%s#%d", h.Repo, h.Number))
+		default:
+			t.Fatalf("history item %v", h)
+		}
 	}
 	return keys
 }

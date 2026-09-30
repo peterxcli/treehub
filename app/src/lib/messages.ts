@@ -14,7 +14,14 @@ export type Request =
   | {type: 'treehub:seen'; repo: string; number: number; force?: boolean}
   | {type: 'treehub:openDashboard'; view?: 'queue' | 'bookmarks'}
   | {type: 'treehub:explainCredentials'; response: ResponseInfo; source: 'settings' | 'signin' | 'none'}
-  | {type: 'treehub:tokenAccepted'; source: 'settings' | 'signin'; scopes?: string};
+  | {type: 'treehub:tokenAccepted'; source: 'settings' | 'signin'; scopes?: string}
+  | {type: 'treehub:dismissSigninProblem'}
+  | {type: 'treehub:recordView'; kind: 'repo' | 'pull'; repo: string; number?: number; title?: string}
+  | {type: 'treehub:listHistory'; limit?: number; cursor?: string; kind?: 'repo' | 'pull'}
+  | {type: 'treehub:deleteHistoryEntry'; kind: 'repo' | 'pull'; repo: string; number?: number}
+  | {type: 'treehub:clearHistory'}
+  | {type: 'treehub:getHistorySettings'}
+  | {type: 'treehub:setHistorySettings'; retentionDays: number; paused: boolean};
 
 export type Reply<T = unknown> =
   | {ok: true; result: T}

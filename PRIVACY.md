@@ -2,7 +2,7 @@
 
 Effective date: September 30, 2026
 
-TreeHub is a browser extension that adds a code tree, pull request review tools, repository bookmarks and a pull request review queue to github.com. Bookmarks and the review queue are optional and need you to sign in with GitHub; they are kept by the TreeHub server, a Cloudflare Worker operated by TreeHub's developer. TreeHub does not sell or share your data with any third party.
+TreeHub is a browser extension that adds a code tree, pull request review tools, repository bookmarks, a pull request review queue and a history of the repositories and pull requests you open to github.com. Bookmarks, the review queue and the history are optional and need you to sign in with GitHub; they are kept by the TreeHub server, a Cloudflare Worker operated by TreeHub's developer. TreeHub does not sell or share your data with any third party.
 
 ## Without signing in
 
@@ -22,7 +22,9 @@ Nothing is sent to the TreeHub server until you sign in.
   - your GitHub handle, which identifies you, and your GitHub user ID, name and avatar URL, from your GitHub profile;
   - when you created your TreeHub account and when you last signed in;
   - your bookmarks: the names of the repositories you bookmarked, and when;
-  - your review queue: the repository, number and title of each pull request you added, when you added it, and when you last opened it. TreeHub records that time when you open a queued pull request on github.com, and only for queued pull requests.
+  - your review queue: the repository, number and title of each pull request you added, when you added it, and when you last opened it. TreeHub records that time when you open a queued pull request on github.com, and only for queued pull requests;
+  - your history: the repositories and pull requests you open on github.com while signed in (the repository name, the pull request number and title), when you first and last opened each, and how many times. An entry is deleted a set number of days after you last opened it: 30 by default, from 1 to 365 in the History tab of the dashboard, where you can also pause the recording, remove entries or clear the history;
+  - your history settings: how many days entries are kept, and whether the recording is paused.
 - **Statuses** of queued pull requests (review requests, new commits, replies, mentions, checks and so on) are computed in your browser from GitHub's data. They are not sent to the TreeHub server.
 - **Hosting.** Cloudflare, which hosts the TreeHub server, processes its requests, including your IP address, and keeps request logs for a short time, as described in [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/).
 
@@ -36,7 +38,8 @@ TreeHub's use of data complies with the [Chrome Web Store User Data Policy](http
 
 ## Removing your data
 
-- **Delete your account**: in the TreeHub dashboard, open the account menu and choose "Delete account". This deletes your account, bookmarks and review queue from the TreeHub server and signs you out.
+- **Delete your account**: in the TreeHub dashboard, open the account menu and choose "Delete account". This deletes your account, bookmarks, review queue and history from the TreeHub server and signs you out.
+- **History**: in the History tab of the dashboard, remove entries, clear the whole history, pause the recording, or choose how many days entries are kept.
 - **Sign out** (dashboard or sidebar settings) deletes your GitHub token and session from your browser. "Sign out everywhere" also ends your sessions in your other browsers.
 - **Revoke the GitHub authorization** of TreeHub in your [GitHub settings](https://github.com/settings/applications).
 - Clear the token field in TreeHub's settings to delete a personal access token. Uninstalling TreeHub deletes everything it stored in your browser.

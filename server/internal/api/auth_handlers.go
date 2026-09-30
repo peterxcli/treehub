@@ -199,8 +199,8 @@ func (s *Server) signIn(ctx context.Context, gh *auth.GitHubUser) (*db.User, str
 
 // upsertUser stores a sign-in. The handle is the key and github_id is stable,
 // so a renamed account is renamed here too and ON UPDATE CASCADE moves its
-// bookmarks and queue. D1 has no transactions; every step is safe to redo on
-// the next sign-in if a later one fails.
+// bookmarks, queue and history. D1 has no transactions; every step is safe to
+// redo on the next sign-in if a later one fails.
 func (s *Server) upsertUser(ctx context.Context, gh *auth.GitHubUser) (db.User, error) {
 	// A different account may still hold this handle: its owner renamed away
 	// and the handle was taken over. Park that row under a name no GitHub
@@ -261,8 +261,8 @@ func (s *Server) me(r *http.Request) (any, error) {
 	return &treehubv1.MeResponse{User: userProto(userFrom(r.Context()))}, nil
 }
 
-// deleteMe deletes the account; ON DELETE CASCADE removes its bookmarks and
-// queue. Its sessions fail from now on (the user is gone), and a later
+// deleteMe deletes the account; ON DELETE CASCADE removes its bookmarks, queue
+// and history. Its sessions fail from now on (the user is gone), and a later
 // sign-in starts a new, empty account with a fresh token version.
 func (s *Server) deleteMe(r *http.Request) (any, error) {
 	if err := s.Q.DeleteUser(r.Context(), userFrom(r.Context()).GithubID); err != nil {

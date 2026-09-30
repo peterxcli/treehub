@@ -69,3 +69,31 @@ export function parsePullRequest(input: string): PRRef | null {
   const number = Number(pull[1]);
   return name && number > 0 && number <= 2147483647 ? {repo: `${url[1]}/${name}`, number} : null;
 }
+
+/** "Today", "Yesterday", or the date (with the year when it isn't this year), in local time. */
+export function dayLabel(iso: string, now = Date.now()): string {
+  const date = new Date(iso);
+  const today = new Date(now);
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(today) - startOf(date)) / DAY);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return date.toLocaleDateString(undefined, {
+    weekday: days < 7 ? 'long' : undefined,
+    month: 'long',
+    day: 'numeric',
+    year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric'
+  });
+}
+
+/** Groups items already sorted by time (newest first) by local day. */
+export function groupByDay<T>(items: T[], timeOf: (item: T) => string, now = Date.now()): Array<{label: string; items: T[]}> {
+  const groups: Array<{label: string; items: T[]}> = [];
+  for (const item of items) {
+    const label = dayLabel(timeOf(item), now);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(item);
+    else groups.push({label, items: [item]});
+  }
+  return groups;
+}

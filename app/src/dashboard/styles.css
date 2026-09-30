@@ -745,6 +745,49 @@ a.chip:hover {
   --tone-border: var(--done-border);
 }
 
+/* ---------- History ---------- */
+
+.history-settings {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-group {
+  margin-top: 20px;
+}
+
+.history-day {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.history-group .pr-list {
+  margin-top: 0;
+}
+
+.history-row .pr-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.history-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.flash > .octicon {
+  color: var(--fg-muted);
+}
+
 /* ---------- Credential problems (lib/credentials.ts) ---------- */
 
 .problem {
@@ -1096,7 +1139,8 @@ a.chip:hover {
     flex-direction: column;
   }
 
-  .segmented {
+  .segmented,
+  .history-settings {
     flex-wrap: wrap;
   }
 }

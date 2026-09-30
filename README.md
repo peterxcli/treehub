@@ -14,9 +14,10 @@ Browser extension that adds an IDE-like code tree, pull request review tools, re
 - **Bookmarks**: click the bookmark icon in the sidebar to bookmark the current repository. It turns bold once bookmarked; click it again to remove the bookmark.
 - **Review queue**: on a pull request, click the review icon in the sidebar to follow it (bold when queued). TreeHub then tracks, for you, independent statuses of each queued pull request: review requested, new commits since your review, replies to your review comments (and who replied), when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged and closed. Queued pull requests are refreshed every 15 minutes, and the toolbar icon counts those that need your attention.
 - **Credential problems explained**: when GitHub refuses TreeHub's token (expired or revoked, missing scope, no access to the repository, organization single sign-on or app restrictions, rate limit), a popup says why, with the token, its scopes and when GitHub last accepted it, and how to fix it. An expired TreeHub sign-in shows its expiry date.
-- **Dashboard**: the extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, and your bookmarks.
+- **History**: while you are signed in, TreeHub remembers the repositories and pull requests you open, most recent first. Each entry is kept 30 days after your last visit by default (1 to 365 days); pause the recording, remove entries or clear the history in the dashboard.
+- **Dashboard**: the extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, your bookmarks and your history. If you get signed out without asking (e.g. the sign-in expired), the sidebar says so and the toolbar icon shows an orange "!".
 
-Bookmarks and the review queue need you to sign in with GitHub (dashboard, or the sidebar settings). They are kept by the TreeHub server ([`server/`](server)), so they follow you across browsers.
+Bookmarks, the review queue and the history need you to sign in with GitHub (dashboard, or the sidebar settings). They are kept by the TreeHub server ([`server/`](server)), so they follow you across browsers.
 
 ## Access token
 

@@ -509,6 +509,300 @@ func (x *OkResponse) GetOk() bool {
 	return false
 }
 
+// A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
+// user's retention (HistorySettings), counted from the last view.
+type HistoryItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`                                          // "repo" or "pull"
+	Repo          string                 `protobuf:"bytes,2,opt,name=repo,proto3" json:"repo,omitempty"`                                          // "owner/name"
+	Number        int32                  `protobuf:"varint,3,opt,name=number,proto3" json:"number,omitempty"`                                     // pull request number, 0 for a repository
+	Title         *string                `protobuf:"bytes,4,opt,name=title,proto3,oneof" json:"title,omitempty"`                                  // pull request title when last viewed
+	FirstViewedAt string                 `protobuf:"bytes,5,opt,name=first_viewed_at,json=firstViewedAt,proto3" json:"first_viewed_at,omitempty"` // RFC 3339 in UTC with milliseconds
+	LastViewedAt  string                 `protobuf:"bytes,6,opt,name=last_viewed_at,json=lastViewedAt,proto3" json:"last_viewed_at,omitempty"`    // RFC 3339 in UTC with milliseconds
+	ViewCount     int32                  `protobuf:"varint,7,opt,name=view_count,json=viewCount,proto3" json:"view_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HistoryItem) Reset() {
+	*x = HistoryItem{}
+	mi := &file_treehub_v1_api_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HistoryItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HistoryItem) ProtoMessage() {}
+
+func (x *HistoryItem) ProtoReflect() protoreflect.Message {
+	mi := &file_treehub_v1_api_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HistoryItem.ProtoReflect.Descriptor instead.
+func (*HistoryItem) Descriptor() ([]byte, []int) {
+	return file_treehub_v1_api_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *HistoryItem) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *HistoryItem) GetRepo() string {
+	if x != nil {
+		return x.Repo
+	}
+	return ""
+}
+
+func (x *HistoryItem) GetNumber() int32 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+func (x *HistoryItem) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *HistoryItem) GetFirstViewedAt() string {
+	if x != nil {
+		return x.FirstViewedAt
+	}
+	return ""
+}
+
+func (x *HistoryItem) GetLastViewedAt() string {
+	if x != nil {
+		return x.LastViewedAt
+	}
+	return ""
+}
+
+func (x *HistoryItem) GetViewCount() int32 {
+	if x != nil {
+		return x.ViewCount
+	}
+	return 0
+}
+
+type ListHistoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*HistoryItem         `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`                                   // last viewed first
+	NextCursor    *string                `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"` // for the next page; absent on the last one
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListHistoryResponse) Reset() {
+	*x = ListHistoryResponse{}
+	mi := &file_treehub_v1_api_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListHistoryResponse) ProtoMessage() {}
+
+func (x *ListHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_treehub_v1_api_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListHistoryResponse.ProtoReflect.Descriptor instead.
+func (*ListHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_treehub_v1_api_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListHistoryResponse) GetItems() []*HistoryItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListHistoryResponse) GetNextCursor() string {
+	if x != nil && x.NextCursor != nil {
+		return *x.NextCursor
+	}
+	return ""
+}
+
+type RecordViewRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         *string                `protobuf:"bytes,1,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordViewRequest) Reset() {
+	*x = RecordViewRequest{}
+	mi := &file_treehub_v1_api_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordViewRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordViewRequest) ProtoMessage() {}
+
+func (x *RecordViewRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_treehub_v1_api_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordViewRequest.ProtoReflect.Descriptor instead.
+func (*RecordViewRequest) Descriptor() ([]byte, []int) {
+	return file_treehub_v1_api_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RecordViewRequest) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+type RecordViewResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *HistoryItem           `protobuf:"bytes,1,opt,name=item,proto3,oneof" json:"item,omitempty"` // absent when recording is paused
+	Paused        bool                   `protobuf:"varint,2,opt,name=paused,proto3" json:"paused,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecordViewResponse) Reset() {
+	*x = RecordViewResponse{}
+	mi := &file_treehub_v1_api_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecordViewResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecordViewResponse) ProtoMessage() {}
+
+func (x *RecordViewResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_treehub_v1_api_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecordViewResponse.ProtoReflect.Descriptor instead.
+func (*RecordViewResponse) Descriptor() ([]byte, []int) {
+	return file_treehub_v1_api_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RecordViewResponse) GetItem() *HistoryItem {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+func (x *RecordViewResponse) GetPaused() bool {
+	if x != nil {
+		return x.Paused
+	}
+	return false
+}
+
+type HistorySettings struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RetentionDays int32                  `protobuf:"varint,1,opt,name=retention_days,json=retentionDays,proto3" json:"retention_days,omitempty"` // 1..365, 30 by default
+	Paused        bool                   `protobuf:"varint,2,opt,name=paused,proto3" json:"paused,omitempty"`                                    // views aren't recorded while paused
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HistorySettings) Reset() {
+	*x = HistorySettings{}
+	mi := &file_treehub_v1_api_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HistorySettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HistorySettings) ProtoMessage() {}
+
+func (x *HistorySettings) ProtoReflect() protoreflect.Message {
+	mi := &file_treehub_v1_api_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HistorySettings.ProtoReflect.Descriptor instead.
+func (*HistorySettings) Descriptor() ([]byte, []int) {
+	return file_treehub_v1_api_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *HistorySettings) GetRetentionDays() int32 {
+	if x != nil {
+		return x.RetentionDays
+	}
+	return 0
+}
+
+func (x *HistorySettings) GetPaused() bool {
+	if x != nil {
+		return x.Paused
+	}
+	return false
+}
+
 var File_treehub_v1_api_proto protoreflect.FileDescriptor
 
 const file_treehub_v1_api_proto_rawDesc = "" +
@@ -555,7 +849,32 @@ const file_treehub_v1_api_proto_rawDesc = "" +
 	"\b_message\"\x1c\n" +
 	"\n" +
 	"OkResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02okBAZ?github.com/peterxcli/treehub/server/gen/go/treehub/v1;treehubv1b\x06proto3"
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xdf\x01\n" +
+	"\vHistoryItem\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
+	"\x04repo\x18\x02 \x01(\tR\x04repo\x12\x16\n" +
+	"\x06number\x18\x03 \x01(\x05R\x06number\x12\x19\n" +
+	"\x05title\x18\x04 \x01(\tH\x00R\x05title\x88\x01\x01\x12&\n" +
+	"\x0ffirst_viewed_at\x18\x05 \x01(\tR\rfirstViewedAt\x12$\n" +
+	"\x0elast_viewed_at\x18\x06 \x01(\tR\flastViewedAt\x12\x1d\n" +
+	"\n" +
+	"view_count\x18\a \x01(\x05R\tviewCountB\b\n" +
+	"\x06_title\"z\n" +
+	"\x13ListHistoryResponse\x12-\n" +
+	"\x05items\x18\x01 \x03(\v2\x17.treehub.v1.HistoryItemR\x05items\x12$\n" +
+	"\vnext_cursor\x18\x02 \x01(\tH\x00R\n" +
+	"nextCursor\x88\x01\x01B\x0e\n" +
+	"\f_next_cursor\"8\n" +
+	"\x11RecordViewRequest\x12\x19\n" +
+	"\x05title\x18\x01 \x01(\tH\x00R\x05title\x88\x01\x01B\b\n" +
+	"\x06_title\"g\n" +
+	"\x12RecordViewResponse\x120\n" +
+	"\x04item\x18\x01 \x01(\v2\x17.treehub.v1.HistoryItemH\x00R\x04item\x88\x01\x01\x12\x16\n" +
+	"\x06paused\x18\x02 \x01(\bR\x06pausedB\a\n" +
+	"\x05_item\"P\n" +
+	"\x0fHistorySettings\x12%\n" +
+	"\x0eretention_days\x18\x01 \x01(\x05R\rretentionDays\x12\x16\n" +
+	"\x06paused\x18\x02 \x01(\bR\x06pausedBAZ?github.com/peterxcli/treehub/server/gen/go/treehub/v1;treehubv1b\x06proto3"
 
 var (
 	file_treehub_v1_api_proto_rawDescOnce sync.Once
@@ -569,7 +888,7 @@ func file_treehub_v1_api_proto_rawDescGZIP() []byte {
 	return file_treehub_v1_api_proto_rawDescData
 }
 
-var file_treehub_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_treehub_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_treehub_v1_api_proto_goTypes = []any{
 	(*User)(nil),                  // 0: treehub.v1.User
 	(*MeResponse)(nil),            // 1: treehub.v1.MeResponse
@@ -580,16 +899,23 @@ var file_treehub_v1_api_proto_goTypes = []any{
 	(*PutQueueItemRequest)(nil),   // 6: treehub.v1.PutQueueItemRequest
 	(*ErrorResponse)(nil),         // 7: treehub.v1.ErrorResponse
 	(*OkResponse)(nil),            // 8: treehub.v1.OkResponse
+	(*HistoryItem)(nil),           // 9: treehub.v1.HistoryItem
+	(*ListHistoryResponse)(nil),   // 10: treehub.v1.ListHistoryResponse
+	(*RecordViewRequest)(nil),     // 11: treehub.v1.RecordViewRequest
+	(*RecordViewResponse)(nil),    // 12: treehub.v1.RecordViewResponse
+	(*HistorySettings)(nil),       // 13: treehub.v1.HistorySettings
 }
 var file_treehub_v1_api_proto_depIdxs = []int32{
 	0, // 0: treehub.v1.MeResponse.user:type_name -> treehub.v1.User
 	2, // 1: treehub.v1.ListBookmarksResponse.bookmarks:type_name -> treehub.v1.Bookmark
 	4, // 2: treehub.v1.ListQueueResponse.items:type_name -> treehub.v1.QueueItem
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	9, // 3: treehub.v1.ListHistoryResponse.items:type_name -> treehub.v1.HistoryItem
+	9, // 4: treehub.v1.RecordViewResponse.item:type_name -> treehub.v1.HistoryItem
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_treehub_v1_api_proto_init() }
@@ -601,13 +927,17 @@ func file_treehub_v1_api_proto_init() {
 	file_treehub_v1_api_proto_msgTypes[4].OneofWrappers = []any{}
 	file_treehub_v1_api_proto_msgTypes[6].OneofWrappers = []any{}
 	file_treehub_v1_api_proto_msgTypes[7].OneofWrappers = []any{}
+	file_treehub_v1_api_proto_msgTypes[9].OneofWrappers = []any{}
+	file_treehub_v1_api_proto_msgTypes[10].OneofWrappers = []any{}
+	file_treehub_v1_api_proto_msgTypes[11].OneofWrappers = []any{}
+	file_treehub_v1_api_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_treehub_v1_api_proto_rawDesc), len(file_treehub_v1_api_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

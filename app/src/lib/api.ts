@@ -5,17 +5,22 @@ import {API_URL} from '../config.ts';
 import {
   BookmarkSchema,
   ErrorResponseSchema,
+  HistorySettingsSchema,
   ListBookmarksResponseSchema,
+  ListHistoryResponseSchema,
   ListQueueResponseSchema,
   MeResponseSchema,
   OkResponseSchema,
   PutQueueItemRequestSchema,
   QueueItemSchema,
+  RecordViewRequestSchema,
+  RecordViewResponseSchema,
   type Bookmark,
+  type HistoryItem,
   type QueueItem,
   type User
 } from '../gen/treehub/v1/api_pb.ts';
-import type {Account, BookmarkEntry, QueueEntry} from './storage.ts';
+import type {Account, BookmarkEntry, HistoryEntry, HistorySettings, QueueEntry} from './storage.ts';
 import type {PRRef} from './status.ts';
 
 export class ApiError extends Error {
@@ -159,4 +164,72 @@ export async function deleteQueueItem(session: string, ref: PRRef): Promise<void
 /** Records that the user just looked at the pull request. */
 export async function markSeen(session: string, ref: PRRef): Promise<QueueEntry> {
   return toQueueEntry(await call(QueueItemSchema, 'POST', `/api/queue/${prPath(ref)}/seen`, session));
+}
+
+// ---------- History ----------
+
+/** A viewed repository (number 0) or pull request. */
+export interface ViewRef {
+  kind: 'repo' | 'pull';
+  repo: string;
+  number?: number;
+}
+
+const viewPath = (view: ViewRef) =>
+  view.kind === 'pull' ? `/api/history/pulls/${prPath({repo: view.repo, number: view.number || 0})}` : `/api/history/repos/${repoPath(view.repo)}`;
+
+export function toHistoryEntry(item: HistoryItem): HistoryEntry {
+  return {
+    kind: item.kind === 'pull' ? 'pull' : 'repo',
+    repo: item.repo,
+    number: item.number,
+    title: item.title,
+    firstViewedAt: item.firstViewedAt,
+    lastViewedAt: item.lastViewedAt,
+    viewCount: item.viewCount
+  };
+}
+
+/** Records a view; `entry` is undefined when the user paused the history. */
+export async function recordView(
+  session: string,
+  view: ViewRef,
+  title?: string
+): Promise<{entry?: HistoryEntry; paused: boolean}> {
+  const body = toJson(RecordViewRequestSchema, create(RecordViewRequestSchema, {title}), {useProtoFieldName: true});
+  const {item, paused} = await call(RecordViewResponseSchema, 'PUT', viewPath(view), session, body);
+  return {entry: item && toHistoryEntry(item), paused};
+}
+
+/** A page of the history, last viewed first; pass `nextCursor` back for the next page. */
+export async function listHistory(
+  session: string,
+  options: {limit?: number; cursor?: string; kind?: 'repo' | 'pull'} = {}
+): Promise<{entries: HistoryEntry[]; nextCursor?: string}> {
+  const params = new URLSearchParams();
+  if (options.limit) params.set('limit', String(options.limit));
+  if (options.cursor) params.set('cursor', options.cursor);
+  if (options.kind) params.set('kind', options.kind);
+  const query = params.toString();
+  const {items, nextCursor} = await call(ListHistoryResponseSchema, 'GET', `/api/history${query ? `?${query}` : ''}`, session);
+  return {entries: items.map(toHistoryEntry), nextCursor};
+}
+
+export async function deleteHistoryEntry(session: string, view: ViewRef): Promise<void> {
+  await call(OkResponseSchema, 'DELETE', viewPath(view), session);
+}
+
+export async function clearHistory(session: string): Promise<void> {
+  await call(OkResponseSchema, 'DELETE', '/api/history', session);
+}
+
+export async function getHistorySettings(session: string): Promise<HistorySettings> {
+  const {retentionDays, paused} = await call(HistorySettingsSchema, 'GET', '/api/history/settings', session);
+  return {retentionDays, paused};
+}
+
+export async function putHistorySettings(session: string, settings: HistorySettings): Promise<HistorySettings> {
+  const body = toJson(HistorySettingsSchema, create(HistorySettingsSchema, settings), {useProtoFieldName: true});
+  const stored = await call(HistorySettingsSchema, 'PUT', '/api/history/settings', session, body);
+  return {retentionDays: stored.retentionDays, paused: stored.paused};
 }
