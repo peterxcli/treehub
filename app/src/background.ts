@@ -62,6 +62,10 @@ async function handle(request: Request): Promise<unknown> {
       return hub.markSeen({repo: request.repo, number: request.number}, request.force);
     case 'treehub:openDashboard':
       return openDashboard(request.view);
+    case 'treehub:explainCredentials':
+      return hub.explainResponse(request.response, request.source);
+    case 'treehub:tokenAccepted':
+      return hub.recordTokenAccepted(request.source, request.scopes);
   }
   throw new Error(`Unknown request: ${(request as {type?: string}).type}`);
 }
@@ -71,7 +75,14 @@ chrome.runtime.onMessage.addListener((request: Request, sender, sendResponse: (r
   if (!request.type.startsWith('treehub:')) return false;
   handle(request).then(
     (result) => sendResponse({ok: true, result: result ?? null}),
-    (err) => sendResponse({ok: false, error: err instanceof Error ? err.message : String(err), code: err && err.code})
+    (err) =>
+      sendResponse({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+        code: err && err.code,
+        // Why the credentials were refused, e.g. an expired session (lib/credentials.ts)
+        problem: err && err.problem
+      })
   );
   return true; // responds asynchronously
 });

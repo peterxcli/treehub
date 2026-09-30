@@ -22,6 +22,8 @@ $(document).ready(() => {
     const prNavView = new PullRequestNavView($dom, adapter);
     const fullFileView = new FullFileView(adapter);
     const hubView = new HubView($dom);
+    // Before any request: it watches their responses
+    new CredentialsView();
 
     let currRepo = false;
     let hasError = false;
@@ -45,11 +47,11 @@ $(document).ready(() => {
           if (this !== optsView) {
             $document.trigger(EVENT.REQ_END);
 
-            optsView.$toggler.removeClass('selected');
-
             if ((adapter.isOnPRPage || adapter.isOnCommitPage) && await extStore.get(STORE.PR)) {
               treeView.$tree.jstree('open_all');
             }
+            // A view loaded while the settings are open (e.g. to change the token) shows when they close
+            if (optsView.$toggler.hasClass('selected')) return;
           }
           showView(this);
         })
@@ -65,6 +67,13 @@ $(document).ready(() => {
 
     $(prNavView).on(EVENT.VIEW_CLOSE, (event, data) => {
       if (data && data.showSettings) optsView.toggle(true);
+    });
+
+    // From the credentials popup, to change the token. Pinned, so that it stays open while the mouse is on the page.
+    $document.on(EVENT.OPEN_SETTINGS, async () => {
+      await extStore.set(STORE.PINNED, true);
+      await onPinToggled(true);
+      optsView.toggle(true);
     });
 
     $(extStore)

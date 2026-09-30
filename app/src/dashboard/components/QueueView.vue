@@ -4,6 +4,7 @@ import {STATUS_FILTER_LABELS, STATUS_ORDER, needsAttention, prKey, type PRState,
 import type {QueueEntry} from '../../lib/storage.ts';
 import {fullTime, parsePullRequest, timeAgo} from '../format.ts';
 import {busy, clock, request, state, toast} from '../store.ts';
+import CredentialProblemCard from './CredentialProblemCard.vue';
 import Octicon from './Octicon.vue';
 import QueueRow from './QueueRow.vue';
 
@@ -196,7 +197,10 @@ async function refresh() {
       <button type="submit" class="btn btn-primary" :disabled="busy.add || !input.trim()">Add</button>
     </form>
 
-    <div v-if="statuses && statuses.error" class="flash flash-error">
+    <CredentialProblemCard v-if="statuses && statuses.problem" :problem="statuses.problem">
+      <button type="button" class="btn" :disabled="busy.refresh" @click="refresh">Retry</button>
+    </CredentialProblemCard>
+    <div v-else-if="statuses && statuses.error" class="flash flash-error">
       <Octicon name="alert" />
       <span>{{ statuses.error }}</span>
       <button type="button" class="btn btn-sm" :disabled="busy.refresh" @click="refresh">Retry</button>

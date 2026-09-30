@@ -19,6 +19,9 @@ import type {Account, BookmarkEntry, QueueEntry} from './storage.ts';
 import type {PRRef} from './status.ts';
 
 export class ApiError extends Error {
+  /** The request, and the server's own message, to explain the error (lib/credentials.ts). */
+  request?: {method: string; url: string; serverMessage?: string};
+
   constructor(
     readonly status: number,
     readonly code: string,
@@ -66,7 +69,13 @@ async function call<T extends DescMessage>(
     const error =
       json && typeof json === 'object' ? fromJson(ErrorResponseSchema, json, {ignoreUnknownFields: true}) : null;
     const code = (error && error.error) || `http_${response.status}`;
-    throw new ApiError(response.status, code, describe(code) || (error && error.message) || describe(`http_${response.status}`)!);
+    const failure = new ApiError(
+      response.status,
+      code,
+      describe(code) || (error && error.message) || describe(`http_${response.status}`)!
+    );
+    failure.request = {method, url: API_URL + path, serverMessage: (error && error.message) || undefined};
+    throw failure;
   }
   return fromJson(schema, json, {ignoreUnknownFields: true});
 }

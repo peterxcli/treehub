@@ -1,6 +1,7 @@
 // State shared by the background worker, the dashboard and the content script, kept in chrome.storage.local.
 // Only the background worker writes it; the others read it and follow chrome.storage.onChanged.
 // Keys start with "treehub." so the content script's store (src/core.storage.js) sees their changes.
+import type {CredentialProblem} from './credentials.ts';
 import type {PRState} from './status.ts';
 
 export const KEYS = {
@@ -12,6 +13,10 @@ export const KEYS = {
   statuses: 'treehub.queue_state',
   /** {@link RepoCache}: GitHub details of bookmarked repositories. */
   repos: 'treehub.repo_meta',
+  /** Why the user was signed out, e.g. an expired session: a {@link CredentialProblem}. */
+  signinProblem: 'treehub.signin_problem',
+  /** {@link TokenSeen}: when GitHub last accepted each token. */
+  tokenSeen: 'treehub.token_seen',
   /** Personal access token entered in the sidebar settings (src/core.constants.js). */
   token: 'treehub.token'
 } as const;
@@ -59,7 +64,12 @@ export interface Statuses {
   refreshedAt?: string;
   /** Why the last refresh failed, e.g. an expired GitHub token. */
   error?: string;
+  /** Explanation of the failure when GitHub refused the credentials. */
+  problem?: CredentialProblem;
 }
+
+/** By token fingerprint (lib/credentials.ts): when GitHub last accepted the token, and its scopes then. */
+export type TokenSeen = Record<string, {at: string; scopes?: string}>;
 
 export interface RepoMeta {
   repo: string; // "owner/name" as GitHub spells it
@@ -85,9 +95,16 @@ export interface State {
   hub?: Hub;
   statuses?: Statuses;
   repos?: RepoCache;
+  signinProblem?: CredentialProblem;
 }
 
-const NAMES = {auth: KEYS.auth, hub: KEYS.hub, statuses: KEYS.statuses, repos: KEYS.repos} as const;
+const NAMES = {
+  auth: KEYS.auth,
+  hub: KEYS.hub,
+  statuses: KEYS.statuses,
+  repos: KEYS.repos,
+  signinProblem: KEYS.signinProblem
+} as const;
 
 export async function load(): Promise<State> {
   const values = await chrome.storage.local.get(Object.values(NAMES));
@@ -95,7 +112,8 @@ export async function load(): Promise<State> {
     auth: values[KEYS.auth] as Auth | undefined,
     hub: values[KEYS.hub] as Hub | undefined,
     statuses: values[KEYS.statuses] as Statuses | undefined,
-    repos: values[KEYS.repos] as RepoCache | undefined
+    repos: values[KEYS.repos] as RepoCache | undefined,
+    signinProblem: values[KEYS.signinProblem] as CredentialProblem | undefined
   };
 }
 

@@ -745,6 +745,96 @@ a.chip:hover {
   --tone-border: var(--done-border);
 }
 
+/* ---------- Credential problems (lib/credentials.ts) ---------- */
+
+.problem {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--danger-border);
+  border-top: 3px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--bg);
+  text-align: left;
+}
+
+.problem header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.problem header > .octicon {
+  color: var(--danger);
+}
+
+.problem h2 {
+  flex: 1;
+  font-size: 16px;
+}
+
+.problem p {
+  margin: 8px 0 12px;
+}
+
+.problem dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-muted);
+  font-size: 12px;
+}
+
+.problem dt {
+  color: var(--fg-muted);
+}
+
+.problem dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.problem-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.problem-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.signin-problem {
+  width: 100%;
+  margin: 0 0 16px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 80px 16px;
+  background: rgb(1 4 9 / 40%);
+}
+
+.modal {
+  width: 560px;
+  max-width: 100%;
+  margin: 0;
+  box-shadow: var(--shadow);
+}
+
 /* ---------- Bookmarks ---------- */
 
 .search {

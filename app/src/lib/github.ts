@@ -13,12 +13,37 @@ import type {QueueEntry, RepoMeta} from './storage.ts';
 
 export class GitHubError extends Error {
   readonly status: number;
+  /** The request and the response headers, to explain the error (lib/credentials.ts). */
+  response?: {method: string; url: string; message: string; headers: Record<string, string>};
 
   constructor(status: number, message: string) {
     super(message);
     this.name = 'GitHubError';
     this.status = status;
   }
+}
+
+// Headers GitHub lets browsers read (Access-Control-Expose-Headers) that explain refused requests
+const EXPLAINING_HEADERS = [
+  'x-ratelimit-limit',
+  'x-ratelimit-remaining',
+  'x-ratelimit-reset',
+  'x-ratelimit-resource',
+  'x-oauth-scopes',
+  'x-accepted-oauth-scopes',
+  'x-github-sso',
+  'retry-after'
+];
+
+function failure(status: number, message: string, response: Response): GitHubError {
+  const error = new GitHubError(status, message);
+  const headers: Record<string, string> = {};
+  for (const name of EXPLAINING_HEADERS) {
+    const value = response.headers.get(name);
+    if (value) headers[name] = value;
+  }
+  error.response = {method: 'POST', url: `${GITHUB_API}/graphql`, message, headers};
+  return error;
 }
 
 interface GraphQLResult<T> {
@@ -40,14 +65,19 @@ async function graphql<T>(token: string, query: string): Promise<GraphQLResult<T
 
   const json: (GraphQLResult<T> & {message?: string}) | null = await response.json().catch(() => null);
   if (response.status === 401) {
-    throw new GitHubError(401, 'GitHub rejected the access token. Please sign in again.');
+    const error = failure(401, 'GitHub rejected the access token. Please sign in again.', response);
+    error.response!.message = (json && json.message) || 'Bad credentials';
+    throw error;
   }
   if (!response.ok || !json) {
-    throw new GitHubError(response.status, (json && json.message) || `GitHub failed (HTTP ${response.status}).`);
+    throw failure(response.status, (json && json.message) || `GitHub failed (HTTP ${response.status}).`, response);
   }
-  // Errors of the whole query (e.g. rate limit) come without data; others are per alias
+  // Errors of the whole query come without data; others are per alias. GraphQL reports rate limits and
+  // refusals (e.g. SAML single sign-on) with HTTP 200: they are told apart as 403s.
   if (!json.data && json.errors && json.errors.length) {
-    throw new GitHubError(response.status, json.errors[0].message);
+    const [first] = json.errors;
+    const refused = first.type === 'RATE_LIMITED' || first.type === 'FORBIDDEN';
+    throw failure(refused ? 403 : response.status, first.message, response);
   }
   return json;
 }

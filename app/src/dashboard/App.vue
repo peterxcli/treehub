@@ -5,11 +5,12 @@ import {STALE_MS} from '../config.ts';
 import {needsAttention, prKey} from '../lib/status.ts';
 import AccountMenu from './components/AccountMenu.vue';
 import BookmarksView from './components/BookmarksView.vue';
+import CredentialProblemCard from './components/CredentialProblemCard.vue';
 import Octicon from './components/Octicon.vue';
 import QueueView from './components/QueueView.vue';
 import SignIn from './components/SignIn.vue';
 import Toasts from './components/Toasts.vue';
-import {init, loaded, request, state} from './store.ts';
+import {init, loaded, problem, request, state} from './store.ts';
 
 type View = 'queue' | 'bookmarks';
 const readView = (): View => (location.hash === '#bookmarks' ? 'bookmarks' : 'queue');
@@ -95,4 +96,8 @@ watch(
   </main>
 
   <Toasts />
+
+  <div v-if="problem" class="modal-backdrop" @click.self="problem = null">
+    <CredentialProblemCard :problem="problem" dismissible class="modal" @dismiss="problem = null" />
+  </div>
 </template>

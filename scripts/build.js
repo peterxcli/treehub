@@ -53,6 +53,7 @@ const SRC_FILES = [
   'src/view.pr-nav.js',
   'src/view.full-file.js',
   'src/view.hub.js',
+  'src/view.credentials.js',
   'src/main.js'
 ];
 

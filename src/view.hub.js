@@ -153,7 +153,7 @@ class HubView {
         });
       }
     } catch (err) {
-      this._flash(err.message);
+      this._fail(err);
     } finally {
       this._pending[kind] = false;
       $toggle.removeClass('pending');
@@ -181,7 +181,7 @@ class HubView {
       await this._send({type: 'treehub:signIn'});
       await this._load();
     } catch (err) {
-      this._flash(err.message);
+      this._fail(err);
     } finally {
       $button.prop('disabled', false).find('span').text('Sign in with GitHub');
     }
@@ -197,7 +197,13 @@ class HubView {
   }
 
   _openDashboard() {
-    this._send({type: 'treehub:openDashboard'}).catch((err) => this._flash(err.message));
+    this._send({type: 'treehub:openDashboard'}).catch((err) => this._fail(err));
+  }
+
+  /** Explains refused credentials (e.g. an expired TreeHub session) in a popup, other errors in a flash. */
+  _fail(err) {
+    if (err.problem) $(document).trigger(EVENT.CREDENTIAL_PROBLEM, [err.problem]);
+    else this._flash(err.message);
   }
 
   _flash(message) {
@@ -206,21 +212,7 @@ class HubView {
     this._flashTimer = setTimeout(() => this.$flash.removeClass('visible'), HUB_FLASH_MS);
   }
 
-  /** Sends a request (app/src/lib/messages.ts) to the background worker and returns its result. */
   _send(request) {
-    if (!isExtensionContextValid()) return whenExtensionContextLost();
-    return new Promise((resolve, reject) => {
-      const noReply = () => reject(new Error('TreeHub did not respond. Please reload this page.'));
-      try {
-        chrome.runtime.sendMessage(request, (reply) => {
-          if (chrome.runtime.lastError || !reply) return noReply();
-          if (reply.ok) resolve(reply.result);
-          else reject(new Error(reply.error));
-        });
-      } catch (err) {
-        // The extension was reloaded or updated just now
-        whenExtensionContextLost();
-      }
-    });
+    return sendToBackground(request);
   }
 }

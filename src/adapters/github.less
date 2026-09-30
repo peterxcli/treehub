@@ -1708,3 +1708,102 @@ html.treehub-ff-opened {
     fill: currentColor;
   }
 }
+
+//
+// Explains refused credentials: expired token, missing scope, no access... (view.credentials.js)
+//
+.treehub-cred {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  z-index: @index-base + 2;
+  box-sizing: border-box;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+  padding: 16px;
+  transform: translateX(-50%);
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-top: 3px solid var(--borderColor-danger-emphasis, #cf222e);
+  border-radius: 12px;
+  background-color: var(--overlay-bgColor, white);
+  box-shadow: @overlay-shadow;
+  color: var(--fgColor-default, #1f2328);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    > .treehub-octicon:first-child {
+      flex: none;
+      fill: var(--fgColor-danger, #d1242f);
+    }
+  }
+
+  h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .treehub-cred-by {
+    color: var(--fgColor-muted, #59636e);
+    font-size: 12px;
+  }
+
+  .treehub-cred-close {
+    padding: 6px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--fgColor-muted, #59636e);
+    line-height: 0;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @bg-hover;
+    }
+
+    .treehub-octicon {
+      fill: currentColor;
+    }
+  }
+
+  .treehub-cred-summary {
+    margin: 8px 0 12px;
+  }
+
+  .treehub-cred-details {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px 12px;
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: var(--bgColor-muted, #f6f8fa);
+    font-size: 12px;
+
+    dt {
+      color: var(--fgColor-muted, #59636e);
+      font-weight: normal;
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .treehub-cred-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}

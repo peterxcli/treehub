@@ -4,11 +4,31 @@
 import * as api from './api.ts';
 import {ApiError} from './api.ts';
 import {signIn as authorize} from './auth.ts';
-import {fetchQueueStates, fetchRepos} from './github.ts';
+import {
+  explainCredentialProblem,
+  tokenFingerprint,
+  type CredentialInfo,
+  type CredentialProblem,
+  type ResponseInfo
+} from './credentials.ts';
+import {GitHubError, fetchQueueStates, fetchRepos} from './github.ts';
 import {needsAttention, prKey, type PRRef, type PRState} from './status.ts';
-import {load, personalToken, save, type Account, type Auth, type BookmarkEntry, type Hub, type QueueEntry} from './storage.ts';
+import {
+  KEYS,
+  load,
+  personalToken,
+  save,
+  type Account,
+  type Auth,
+  type BookmarkEntry,
+  type Hub,
+  type QueueEntry,
+  type TokenSeen
+} from './storage.ts';
 
 const REPO_TTL_MS = 30 * 60 * 1000;
+// Records that GitHub accepted a token at most this often (unless its scopes change)
+const TOKEN_SEEN_THROTTLE_MS = 10 * 60 * 1000;
 // Visiting a pull request again within this time does not record another visit.
 const SEEN_THROTTLE_MS = 30 * 1000;
 
@@ -38,19 +58,77 @@ async function githubToken(auth: Auth): Promise<string | undefined> {
   return auth.githubToken || (await personalToken());
 }
 
-/** Signs out locally when the backend rejects the session, so that the pages offer to sign in again. */
+/**
+ * Signs out locally when the backend rejects the session, so that the pages offer to sign in again, and explains
+ * why (the error gets the explanation as `problem`, and the sign-in page shows it).
+ */
 async function backend<T>(request: Promise<T>): Promise<T> {
   try {
     return await request;
   } catch (err) {
-    if (err instanceof ApiError && err.isAuthError) await clearAccount();
+    if (err instanceof ApiError && err.isAuthError) {
+      const {auth} = await load();
+      const {method, url, serverMessage} = err.request || {};
+      const problem = auth
+        ? explainCredentialProblem(
+            {service: 'treehub', status: 401, method, url, message: serverMessage},
+            {source: 'signin', login: auth.account.login, session: auth.session}
+          )
+        : null;
+      await clearAccount(problem);
+      if (problem) throw Object.assign(err, {problem});
+    }
     throw err;
   }
 }
 
-async function clearAccount(): Promise<void> {
-  await exclusive(() => save({auth: null, hub: null, statuses: null, repos: null}));
+async function clearAccount(problem: CredentialProblem | null = null): Promise<void> {
+  await exclusive(() => save({auth: null, hub: null, statuses: null, repos: null, signinProblem: problem}));
   await updateBadge();
+}
+
+// ---------- Credentials ----------
+
+async function tokenOf(source: 'settings' | 'signin' | 'none', auth: Auth | undefined): Promise<string | undefined> {
+  if (source === 'settings') return personalToken();
+  return source === 'signin' && auth ? auth.githubToken : undefined;
+}
+
+async function credentialFor(source: 'settings' | 'signin' | 'none'): Promise<CredentialInfo> {
+  const {auth} = await load();
+  const token = await tokenOf(source, auth);
+  let lastAccepted = null;
+  if (token) {
+    const values = await chrome.storage.local.get(KEYS.tokenSeen);
+    lastAccepted = ((values[KEYS.tokenSeen] || {}) as TokenSeen)[await tokenFingerprint(token)] || null;
+  }
+  return {source, token, lastAccepted, login: auth && auth.account.login, session: auth && auth.session};
+}
+
+/** Explains why GitHub refused a request of the content script (src/view.credentials.js). */
+export async function explainResponse(
+  response: ResponseInfo,
+  source: 'settings' | 'signin' | 'none'
+): Promise<CredentialProblem | null> {
+  return explainCredentialProblem(response, await credentialFor(source));
+}
+
+/** Remembers that GitHub accepted the token of `source`, to tell when it stops being accepted. */
+export async function recordTokenAccepted(source: 'settings' | 'signin', scopes?: string): Promise<void> {
+  const token = await tokenOf(source, (await load()).auth);
+  if (!token) return;
+  const fingerprint = await tokenFingerprint(token);
+  await exclusive(async () => {
+    const values = await chrome.storage.local.get(KEYS.tokenSeen);
+    const seen: TokenSeen = {...((values[KEYS.tokenSeen] || {}) as TokenSeen)};
+    const previous = seen[fingerprint];
+    const fresh = previous && Date.now() - Date.parse(previous.at) < TOKEN_SEEN_THROTTLE_MS;
+    if (fresh && (!scopes || scopes === previous.scopes)) return;
+    seen[fingerprint] = {at: now(), scopes: scopes || (previous && previous.scopes)};
+    // Only the few latest tokens matter
+    const latest = Object.entries(seen).sort((a, b) => Date.parse(b[1].at) - Date.parse(a[1].at)).slice(0, 10);
+    await chrome.storage.local.set({[KEYS.tokenSeen]: Object.fromEntries(latest)});
+  });
 }
 
 async function updateHub(auth: Auth, change: (hub: Hub) => Hub): Promise<void> {
@@ -73,7 +151,11 @@ export async function signIn(devLogin?: string): Promise<Account> {
   await exclusive(async () => {
     const {auth: previous} = await load();
     // Data of another account must not show up
-    await save(sameLogin(previous, auth.account.login) ? {auth} : {auth, hub: null, statuses: null, repos: null});
+    await save(
+      sameLogin(previous, auth.account.login)
+        ? {auth, signinProblem: null}
+        : {auth, hub: null, statuses: null, repos: null, signinProblem: null}
+    );
   });
   await sync();
   void refreshStatuses();
@@ -257,14 +339,24 @@ async function runRefresh(refs?: PRRef[]): Promise<void> {
 
   let states: Record<string, PRState> = {};
   let error: string | undefined;
+  let problem: CredentialProblem | undefined;
+  let fetched = false;
   const token = await githubToken(auth);
+  const source = auth.githubToken ? 'signin' : 'settings';
   if (!token) {
     error = 'TreeHub has no GitHub token to read pull requests with. Please sign in again.';
   } else if (entries.length) {
     try {
       states = await fetchQueueStates(token, entries, login);
+      fetched = true;
+      void recordTokenAccepted(source);
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
+      if (err instanceof GitHubError && err.response && (err.status === 401 || err.status === 403)) {
+        const response = {service: 'github' as const, status: err.status, label: 'Refreshing your review queue', ...err.response};
+        problem = explainCredentialProblem(response, await credentialFor(source)) || undefined;
+        if (problem) error = problem.title;
+      }
     }
   }
 
@@ -278,12 +370,15 @@ async function runRefresh(refs?: PRRef[]): Promise<void> {
     for (const key of Object.keys(merged)) {
       if (!queued.has(key)) delete merged[key];
     }
+    // A successful fetch settles earlier failures
+    const settled = fetched || !previous;
     await save({
       statuses: {
         login,
         states: merged,
         refreshedAt: keys || error ? previous && previous.refreshedAt : now(),
-        error: error || (keys ? previous && previous.error : undefined)
+        error: error || (settled ? undefined : previous.error),
+        problem: problem || (error || settled ? undefined : previous.problem)
       }
     });
   });
@@ -310,8 +405,16 @@ export async function updateBadge(): Promise<void> {
       return !!state && needsAttention(state);
     }).length;
   }
-  await chrome.action.setBadgeBackgroundColor({color: '#0969da'});
   if (chrome.action.setBadgeTextColor) await chrome.action.setBadgeTextColor({color: '#ffffff'});
+  // GitHub refusing the credentials comes first: statuses can't be trusted
+  const problem = auth && statuses && statuses.login === auth.account.login ? statuses.problem : undefined;
+  if (problem) {
+    await chrome.action.setBadgeBackgroundColor({color: '#d1242f'});
+    await chrome.action.setBadgeText({text: '!'});
+    await chrome.action.setTitle({title: `TreeHub: ${problem.title}`});
+    return;
+  }
+  await chrome.action.setBadgeBackgroundColor({color: '#0969da'});
   await chrome.action.setBadgeText({text: count ? String(count) : ''});
   await chrome.action.setTitle({
     title: count ? `TreeHub: ${count} pull request${count === 1 ? ' needs' : 's need'} your attention` : 'TreeHub'

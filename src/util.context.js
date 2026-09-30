@@ -44,6 +44,30 @@ function whenExtensionContextLost() {
   return new Promise(() => {});
 }
 
+/**
+ * Sends a request (app/src/lib/messages.ts) to the background worker. Resolves with its result, or rejects with
+ * an Error having the code of the failure, and its explanation (`problem`) when credentials were refused.
+ */
+function sendToBackground(request) {
+  if (!isExtensionContextValid()) return whenExtensionContextLost();
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.runtime.sendMessage(request, (reply) => {
+        if (chrome.runtime.lastError || !reply) {
+          reject(new Error('TreeHub did not respond. Please reload this page.'));
+        } else if (reply.ok) {
+          resolve(reply.result);
+        } else {
+          reject(Object.assign(new Error(reply.error), {code: reply.code, problem: reply.problem}));
+        }
+      });
+    } catch (err) {
+      // The extension was reloaded or updated just now
+      whenExtensionContextLost();
+    }
+  });
+}
+
 // Calls that were already running when the extension went away (not errors of other extensions)
 for (const type of ['unhandledrejection', 'error']) {
   window.addEventListener(type, (event) => {
@@ -57,3 +81,4 @@ for (const type of ['unhandledrejection', 'error']) {
 
 window.isExtensionContextValid = isExtensionContextValid;
 window.whenExtensionContextLost = whenExtensionContextLost;
+window.sendToBackground = sendToBackground;

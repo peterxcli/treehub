@@ -55,7 +55,9 @@ const EVENT = {
   FETCH_ERROR: 'treehub:error',
   SIDEBAR_HTML_INSERTED: 'treehub:sidebarHtmlInserted',
   REPO_LOADED: 'treehub:repoLoaded',
-  VIEWED_CHANGE: 'treehub:viewedChange'
+  VIEWED_CHANGE: 'treehub:viewedChange',
+  OPEN_SETTINGS: 'treehub:openSettings',
+  CREDENTIAL_PROBLEM: 'treehub:credentialProblem'
 };
 
 window.STORE = STORE;

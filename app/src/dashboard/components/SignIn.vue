@@ -2,10 +2,12 @@
 import {ref} from 'vue';
 import {DEV_LOGIN} from '../../config.ts';
 import logo from '../../../../icons/icon128.png';
-import {busy, request} from '../store.ts';
+import {busy, request, state} from '../store.ts';
+import CredentialProblemCard from './CredentialProblemCard.vue';
 import Octicon from './Octicon.vue';
 
 const devLogin = ref('');
+const hideProblem = ref(false);
 
 function signIn() {
   void request('signIn', {type: 'treehub:signIn'});
@@ -18,6 +20,13 @@ function devSignIn() {
 
 <template>
   <section class="signin">
+    <CredentialProblemCard
+      v-if="state.signinProblem && !hideProblem"
+      :problem="state.signinProblem"
+      dismissible
+      class="signin-problem"
+      @dismiss="hideProblem = true"
+    />
     <img :src="logo" alt="" width="64" height="64" />
     <h1>Welcome to TreeHub</h1>
     <p class="lead">
