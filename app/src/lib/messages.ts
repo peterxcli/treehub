@@ -13,6 +13,7 @@ export type Request =
   | {type: 'treehub:setQueued'; repo: string; number: number; on: boolean; title?: string; seen?: boolean; note?: string}
   | {type: 'treehub:setNote'; repo: string; number?: number; note: string}
   | {type: 'treehub:search'; text: string; limit?: number}
+  | {type: 'treehub:queueIfCommented'; repo: string; number: number; since: string}
   | {type: 'treehub:seen'; repo: string; number: number; force?: boolean}
   | {type: 'treehub:openDashboard'; view?: 'queue' | 'bookmarks'}
   | {type: 'treehub:explainCredentials'; response: ResponseInfo; source: 'settings' | 'signin' | 'none'}

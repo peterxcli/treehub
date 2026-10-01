@@ -61,6 +61,8 @@ async function handle(request: Request): Promise<unknown> {
       return hub.setNote({repo: request.repo, number: request.number}, request.note);
     case 'treehub:search':
       return hub.search(request.text, request.limit);
+    case 'treehub:queueIfCommented':
+      return hub.queueIfCommented({repo: request.repo, number: request.number}, request.since);
     case 'treehub:seen':
       return hub.markSeen({repo: request.repo, number: request.number}, request.force);
     case 'treehub:openDashboard':

@@ -6,6 +6,8 @@ const HUB_STORE = {
 };
 const HUB_PR_PATH = /^\/[^\/]+\/[^\/]+\/pull\/(\d+)(?:\/|$)/;
 const HUB_FLASH_MS = 6000;
+// A message with an action stays longer
+const HUB_FLASH_ACTION_MS = 12000;
 
 /**
  * Bookmark and review queue toggles, the dashboard button and the TreeHub account in the settings.
@@ -15,7 +17,8 @@ const HUB_FLASH_MS = 6000;
  * worker when a queued pull request is looked at, which settles its replies, mentions and updates, and which
  * repositories and pull requests the user opens, for their history. When the user was signed out without asking
  * (e.g. the session expired), a notice in the sidebar says so. Bookmarking a repository or queueing a pull request
- * offers to add a note to it.
+ * offers to add a note to it. A pull request the user comments on joins the queue (view.comment-watch.js), unless
+ * switched off in the settings.
  */
 class HubView {
   constructor($dom) {
@@ -33,6 +36,11 @@ class HubView {
     this.$notePrompt = $dom.find('.treehub-note-prompt');
     this.$noteText = this.$notePrompt.find('textarea');
     this._noteTarget = null;
+    this._autoQueue = true;
+    this._comments = new CommentWatch({
+      active: (pull) => !!this.auth && !!this.hub && this._autoQueue && !this._isQueued(pull),
+      check: (pull, since) => this._queueIfCommented(pull, since)
+    });
 
     this.$bookmark.click((event) => {
       event.preventDefault();
@@ -81,12 +89,14 @@ class HubView {
       if (!visible && this._noteTarget && !this.$noteText.val().trim()) this._closeNotePrompt();
     });
     $(extStore).on(EVENT.STORE_CHANGE, (event, changes) => {
-      if (changes[HUB_STORE.AUTH] || changes[HUB_STORE.HUB] || changes[HUB_STORE.SIGNIN_PROBLEM]) this._load();
+      const keys = [HUB_STORE.AUTH, HUB_STORE.HUB, HUB_STORE.SIGNIN_PROBLEM, STORE.AUTO_QUEUE];
+      if (keys.some((key) => changes[key])) this._load();
     });
     // Switching tabs: looked at the pull request until now, or looking at it again
     document.addEventListener('visibilitychange', () => {
       this._seen(this.pull);
       if (document.visibilityState === 'visible') this._recordView();
+      else this._comments.leave();
     });
   }
 
@@ -107,6 +117,7 @@ class HubView {
       // Leaving a pull request, e.g. after commenting on it
       this._seen(previous);
       if (document.visibilityState === 'visible') this._seen(this.pull);
+      this._comments.setPull(this.pull);
     }
     this._recordView();
     this._render();
@@ -130,10 +141,14 @@ class HubView {
     const auth = await extStore.get(HUB_STORE.AUTH);
     const hub = await extStore.get(HUB_STORE.HUB);
     const signinProblem = await extStore.get(HUB_STORE.SIGNIN_PROBLEM);
+    this._autoQueue = (await extStore.get(STORE.AUTO_QUEUE)) !== false;
     const signedIn = !this.auth && auth;
+    const wasQueued = this._isQueued(this.pull);
     this.auth = auth || null;
     this.hub = auth && hub && hub.login === auth.account.login ? hub : null;
     this.signinProblem = !auth && signinProblem ? signinProblem : null;
+    // Removed from the queue: only comments from now on add it again
+    if (wasQueued && !this._isQueued(this.pull)) this._comments.restart();
     this._render();
     // Signed in on this page: it counts as viewed
     if (signedIn) this._recordView();
@@ -267,6 +282,21 @@ class HubView {
     return a.number ? this._samePull(a, b) : !b.number && a.repo.toLowerCase() === b.repo.toLowerCase();
   }
 
+  /**
+   * Queues the pull request if the user commented on it since `since` (view.comment-watch.js), and says so when it
+   * is the one of the page. Resolves whether it queued it.
+   */
+  async _queueIfCommented(pull, since) {
+    const queued = await this._send({type: 'treehub:queueIfCommented', repo: pull.repo, number: pull.number, since});
+    if (queued && this._samePull(pull, this.pull)) {
+      this._flash('Added to your review queue: you commented on it.', {
+        info: true,
+        action: {label: 'Add a note', run: () => this._openNotePrompt(pull)}
+      });
+    }
+    return !!queued;
+  }
+
   /** Title of the pull request of this page, cached by the backend for display. */
   _pullTitle() {
     const heading = $('[data-component="PH_Title"] .markdown-title, .js-issue-title').first().text().trim();
@@ -325,10 +355,22 @@ class HubView {
     else this._flash(err.message);
   }
 
-  _flash(message) {
+  /** Shows a message at the top of the sidebar: an error, or else `info`, with an optional {label, run} action. */
+  _flash(message, {info = false, action = null} = {}) {
     clearTimeout(this._flashTimer);
-    this.$flash.text(message).addClass('visible');
-    this._flashTimer = setTimeout(() => this.$flash.removeClass('visible'), HUB_FLASH_MS);
+    this.$flash.empty().toggleClass('info', info).append($('<span>').text(message));
+    if (action) {
+      const $action = $('<button type="button" class="btn-link treehub-hub-flash-action">').text(action.label);
+      $action.on('click', (event) => {
+        event.stopPropagation();
+        this.$flash.removeClass('visible');
+        action.run();
+      });
+      this.$flash.append(' ', $action);
+    }
+    this.$flash.addClass('visible');
+    const duration = action ? HUB_FLASH_ACTION_MS : HUB_FLASH_MS;
+    this._flashTimer = setTimeout(() => this.$flash.removeClass('visible'), duration);
   }
 
   _send(request) {

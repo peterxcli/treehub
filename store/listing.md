@@ -46,6 +46,7 @@ PULL REQUEST NAVIGATION
 
 REVIEW QUEUE
 • One click on a pull request adds it to your review queue; the icon turns bold while it is queued
+• Pull requests you comment on or review join your queue by themselves (this can be switched off)
 • For each queued pull request, TreeHub shows what concerns you, each as its own status: review requested, new commits since your review, replies to your review comments and who wrote them, when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged, closed
 • Refreshed every 15 minutes; the toolbar icon counts the pull requests that need your attention
 
@@ -118,7 +119,7 @@ TreeHub helps developers navigate and review code on GitHub: a code tree and pul
 - Host permission (content script on `https://github.com/*`):
 
   ```text
-  The content script shows the TreeHub sidebar on GitHub pages. It reads the current page to know which repository, branch, pull request or commit to show, and adds the "View full" buttons to pull request diffs.
+  The content script shows the TreeHub sidebar on GitHub pages. It reads the current page to know which repository, branch, pull request or commit to show, and adds the "View full" buttons to pull request diffs. On pull requests, it notices when the user posts a comment (without reading it), to add the pull request to the user's review queue.
   ```
 
 **Are you using remote code?** No, I am not using remote code. (All code, including highlight.js, is bundled in the package.)

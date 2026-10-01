@@ -27,6 +27,7 @@ Nothing is sent to the TreeHub server until you sign in.
   - your history: the repositories and pull requests you open on github.com while signed in (the repository name, the pull request number and title), when you first and last opened each, and how many times. An entry is deleted a set number of days after you last opened it: 30 by default, from 1 to 365 in the History tab of the dashboard, where you can also pause the recording, remove entries or clear the history;
   - your history settings: how many days entries are kept, and whether the recording is paused.
 - **Statuses** of queued pull requests (review requests, new commits, replies, mentions, checks and so on) are computed in your browser from GitHub's data. They are not sent to the TreeHub server.
+- **Pull requests you comment on** join your review queue. On a pull request page, TreeHub notices that you typed in a comment box and posted it (it never reads what you type), then asks GitHub whether you commented on or reviewed the pull request since you opened it; if so, it adds the pull request to your queue. You can switch this off in TreeHub's settings.
 - **Hosting.** Cloudflare, which hosts the TreeHub server, processes its requests, including your IP address, and keeps request logs for a short time, as described in [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/).
 
 ## What TreeHub does not do

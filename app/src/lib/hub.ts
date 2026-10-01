@@ -14,7 +14,7 @@ import {
   type CredentialProblem,
   type ResponseInfo
 } from './credentials.ts';
-import {GitHubError, fetchQueueStates, fetchRepos} from './github.ts';
+import {GitHubError, fetchQueueStates, fetchRepos, fetchViewerActivity} from './github.ts';
 import {needsAttention, prKey, type PRRef, type PRState} from './status.ts';
 import {
   KEYS,
@@ -451,6 +451,28 @@ export async function setNote(target: NoteTarget, note: string): Promise<void> {
     throw new Error(`${ref.repo}#${ref.number} is not in your review queue anymore.`);
   }
   return setQueued(ref, true, {note});
+}
+
+/**
+ * Queues a pull request the user commented on or reviewed since `since` (about when they opened it), unless it is
+ * queued already. The sidebar asks when the user seems to have posted a comment on it. Returns whether it queued it.
+ */
+export async function queueIfCommented(ref: PRRef, since: string): Promise<boolean> {
+  const key = prKey(ref);
+  const isQueued = (h?: Hub | null) => !!h && h.queue.some((e) => prKey(e) === key);
+  const {auth, hub} = await load();
+  if (!auth || !hub || isQueued(hub)) return false;
+  const token = await githubToken(auth);
+  if (!token) return false;
+
+  const activity = await fetchViewerActivity(token, ref);
+  const commentedAt = activity && activity.lastCommentedAt;
+  if (!commentedAt || Date.parse(commentedAt) < Date.parse(since)) return false;
+  // Queued meanwhile, e.g. from the sidebar
+  if (isQueued((await load()).hub)) return false;
+  // Looking at it
+  await setQueued(ref, true, {title: activity.title, seen: true});
+  return true;
 }
 
 /** Searches the notes, titles and repositories of the bookmarks and the queue (see api.search). */

@@ -52,6 +52,8 @@ Click the bookmark icon in the sidebar to bookmark the current repository. It tu
 
 On a pull request, click the review icon in the sidebar to follow it (bold when queued). TreeHub then tracks, for you, independent statuses of each queued pull request: review requested, new commits since your review, replies to your review comments (and who replied), when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged and closed. Queued pull requests are refreshed every 15 minutes, and the toolbar icon counts those that need your attention.
 
+A pull request you comment on or review joins your queue by itself, to follow the replies: after you post on a pull request page, TreeHub asks GitHub whether you commented (it never reads what you type). Switch it off in the settings ("Add pull requests I comment on to my review queue").
+
 <img src="docs/screenshots/review-queue.png" width="1100" alt="The review queue in the dashboard: filters by status and the statuses of each pull request">
 
 ### Notes and search

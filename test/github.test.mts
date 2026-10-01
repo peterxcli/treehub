@@ -74,3 +74,50 @@ test('rate limits and rejected tokens stop the refresh instead of splitting', as
   await assert.rejects(fetchQueueStates('token', entries, 'peterxcli'), /sign in again/);
   assert.equal(queries.length, 1);
 });
+
+test('the last time the user commented: comments and submitted reviews, not pending ones or others\'', async () => {
+  const {lastCommentedAt} = await import('../app/src/lib/github.ts');
+  const node = (comments: Array<[boolean, string]>, reviews: Array<[boolean, string, string | null]>) => ({
+    title: 'T',
+    comments: {nodes: comments.map(([viewerDidAuthor, createdAt]) => ({viewerDidAuthor, createdAt}))},
+    reviews: {nodes: reviews.map(([viewerDidAuthor, state, submittedAt]) => ({viewerDidAuthor, state, submittedAt}))}
+  });
+  assert.equal(lastCommentedAt(node([], [])), undefined);
+  assert.equal(lastCommentedAt(node([[false, '2026-10-01T10:00:00Z']], [[false, 'APPROVED', '2026-10-01T11:00:00Z']])), undefined);
+  // A reply or an inline comment is a review of its own
+  assert.equal(
+    lastCommentedAt(
+      node(
+        [[true, '2026-09-30T08:00:00Z'], [false, '2026-10-01T09:00:00Z']],
+        [[true, 'COMMENTED', '2026-10-01T08:30:00Z'], [true, 'PENDING', null], [false, 'COMMENTED', '2026-10-01T12:00:00Z']]
+      )
+    ),
+    '2026-10-01T08:30:00Z'
+  );
+  assert.equal(lastCommentedAt(node([[true, '2026-10-01T09:15:00Z']], [[true, 'APPROVED', '2026-10-01T09:14:59Z']])),
+    '2026-10-01T09:15:00Z');
+  // A review started long ago counts when submitted
+  assert.equal(lastCommentedAt(node([], [[true, 'CHANGES_REQUESTED', '2026-10-01T13:00:00Z']])), '2026-10-01T13:00:00Z');
+});
+
+test('asks GitHub about one pull request, quoting its names', async () => {
+  const {fetchViewerActivity} = await import('../app/src/lib/github.ts');
+  let query = '';
+  globalThis.fetch = (async (_url: string, init: {body: string}) => {
+    query = JSON.parse(init.body).query;
+    return Response.json({data: {repository: {pullRequest: {
+      title: 'HDDS-1. A fix',
+      comments: {nodes: [{viewerDidAuthor: true, createdAt: '2026-10-01T09:00:00Z'}]},
+      reviews: {nodes: []}
+    }}}});
+  }) as typeof fetch;
+  assert.deepEqual(await fetchViewerActivity('token', {repo: 'o-1/r.js', number: 7}), {
+    title: 'HDDS-1. A fix',
+    lastCommentedAt: '2026-10-01T09:00:00Z'
+  });
+  assert.match(query, /repository\(owner: "o-1", name: "r\.js"\)/);
+  assert.match(query, /pullRequest\(number: 7\)/);
+
+  globalThis.fetch = (async () => Response.json({data: {repository: {pullRequest: null}}})) as typeof fetch;
+  assert.equal(await fetchViewerActivity('token', {repo: 'o/r', number: 1}), null);
+});

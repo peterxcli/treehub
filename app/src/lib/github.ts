@@ -1,4 +1,5 @@
-// GitHub GraphQL requests of the background worker: statuses of queued pull requests and details of bookmarks.
+// GitHub GraphQL requests of the background worker: statuses of queued pull requests, details of bookmarks, and
+// whether the user commented on a pull request.
 import {GITHUB_API} from '../config.ts';
 import {
   QUERY_BATCH_SIZE,
@@ -6,6 +7,7 @@ import {
   prKey,
   readQueueResult,
   toPRState,
+  type PRRef,
   type PRState,
   type QueueQueryResult
 } from './status.ts';
@@ -210,4 +212,50 @@ export async function fetchRepos(token: string, repos: string[]): Promise<Record
     });
   });
   return metas;
+}
+
+// ---------- The user's comments ----------
+
+/** The user's comments and reviews of a pull request, newest last. */
+export interface ActivityNode {
+  title: string;
+  comments: {nodes: Array<{viewerDidAuthor: boolean; createdAt: string}>};
+  reviews: {nodes: Array<{viewerDidAuthor: boolean; state: string; submittedAt: string | null}>};
+}
+
+/** When the user last commented on the pull request or submitted a review of it: a pending review doesn't count. */
+export function lastCommentedAt(pr: ActivityNode): string | undefined {
+  const times = [
+    ...pr.comments.nodes.filter((c) => c.viewerDidAuthor).map((c) => c.createdAt),
+    ...pr.reviews.nodes
+      .filter((r) => r.viewerDidAuthor && r.state !== 'PENDING' && r.submittedAt)
+      .map((r) => r.submittedAt as string)
+  ];
+  // GitHub's times are UTC, in one format: they sort as text
+  return times.sort().pop();
+}
+
+/**
+ * The title of a pull request and when the user (the token's) last commented on it or reviewed it; null when
+ * there is no such pull request.
+ */
+export async function fetchViewerActivity(
+  token: string,
+  ref: PRRef
+): Promise<{title: string; lastCommentedAt?: string} | null> {
+  const [owner, name] = ref.repo.split('/');
+  const result = await graphql<{repository: {pullRequest: ActivityNode | null} | null}>(
+    token,
+    `query TreeHubViewerActivity {
+  repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) {
+    pullRequest(number: ${Math.floor(ref.number)}) {
+      title
+      comments(last: 30) { nodes { viewerDidAuthor createdAt } }
+      reviews(last: 30) { nodes { viewerDidAuthor state submittedAt } }
+    }
+  }
+}`
+  );
+  const pr = result.data && result.data.repository && result.data.repository.pullRequest;
+  return pr ? {title: pr.title, lastCommentedAt: lastCommentedAt(pr)} : null;
 }

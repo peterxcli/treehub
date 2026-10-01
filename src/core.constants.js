@@ -20,7 +20,9 @@ const STORE = {
   WIDTH: 'treehub.sidebar_width',
   SHOWN: 'treehub.sidebar_shown',
   PINNED: 'treehub.sidebar_pinned',
-  HUGE_REPOS: 'treehub.huge_repos'
+  HUGE_REPOS: 'treehub.huge_repos',
+  // Pull requests the user comments on join the review queue (view.comment-watch.js)
+  AUTO_QUEUE: 'treehub.auto_queue'
 };
 
 const DEFAULTS = {
@@ -38,7 +40,8 @@ const DEFAULTS = {
   WIDTH: 232,
   SHOWN: false,
   PINNED: false,
-  HUGE_REPOS: {}
+  HUGE_REPOS: {},
+  AUTO_QUEUE: true
 };
 
 const EVENT = {
