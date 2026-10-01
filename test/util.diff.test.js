@@ -189,3 +189,20 @@ test('pastHalfLife: renew once half the lifetime has passed, also after expiry',
   assert.equal(pastHalfLife(issued, expires, Date.parse('2026-10-01T00:00:00Z')), true);
   assert.equal(pastHalfLife('not a date', expires, Date.parse('2026-10-01T00:00:00Z')), false);
 });
+
+test('the ref and path of tree and blob URLs, where refs can have slashes', () => {
+  const {refPathOf, longestRefOf} = load('src/util.misc.js');
+  assert.equal(refPathOf('/ivandika3/ozone/tree/refs/heads/HDDS-16513'), 'refs/heads/HDDS-16513');
+  assert.equal(refPathOf('/o/r/blob/refs%2Fheads%2Ffeature%2Fx/src/a%20b.js'), 'refs/heads/feature/x/src/a b.js');
+  assert.equal(refPathOf('/o/r/tree/main'), 'main');
+  assert.equal(refPathOf('/o/r/tree/100%'), '100%');
+
+  const refs = ['feature', 'feature/x', 'feature/x-2', 'main'];
+  assert.equal(longestRefOf('feature/x/src/a.js', refs), 'feature/x');
+  assert.equal(longestRefOf('feature/x', refs), 'feature/x');
+  assert.equal(longestRefOf('feature/x-2/src', refs), 'feature/x-2');
+  assert.equal(longestRefOf('feature/y/src', refs), 'feature');
+  assert.equal(longestRefOf('mainline/src', refs), null);
+  assert.equal(longestRefOf('refs/heads/HDDS-16513/hadoop-ozone', ['refs/heads/HDDS-16513', null, undefined]),
+    'refs/heads/HDDS-16513');
+});

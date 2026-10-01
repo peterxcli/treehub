@@ -141,15 +141,16 @@ class GitHub extends Adapter {
       }
     }
 
+    const lastBranch = currentRepo.username === username && currentRepo.reponame === reponame && currentRepo.branch;
     const branch =
       // The commit shown
       (isCommit && typeId) ||
       // The target branch of a pull request
       (pullRefs && pullRefs.base) ||
-      // The branch (or commit) of tree and blob URLs
-      ((type === 'tree' || type === 'blob') && typeId) ||
+      // The branch, tag or commit of tree and blob URLs
+      ((type === 'tree' || type === 'blob') && (await this._getRefOfPage({username, reponame}, token, lastBranch))) ||
       // The branch shown last in this repository
-      (currentRepo.username === username && currentRepo.reponame === reponame && currentRepo.branch) ||
+      lastBranch ||
       // The default branch, when known (else it is requested below)
       this._defaultBranch[username + '/' + reponame];
 
@@ -170,9 +171,71 @@ class GitHub extends Adapter {
     }
   }
 
+  /**
+   * The branch, tag or commit of a tree or blob page. The URL doesn't tell where a name with slashes ends and the
+   * path starts (/tree/feature/x/src, /tree/refs/heads/main/src), so the ref is, in this order: the one of GitHub's
+   * data of the page, the one shown last in the repository, a single name, or the longest of the repository's
+   * branches and tags that the URL starts with. GitHub's data may be from an earlier page (it navigates without
+   * loading pages): each must fit the URL.
+   */
+  async _getRefOfPage(repo, token, lastBranch) {
+    const refPath = refPathOf(location.pathname);
+    const pageRef = this._getPageRefInfo();
+    const known = longestRefOf(refPath, [pageRef && pageRef.name, lastBranch]);
+    if (known) return known;
+
+    const [first] = refPath.split('/');
+    if (refPath === first || /^[0-9a-f]{40}$/i.test(first)) return first;
+    try {
+      const matched = await this._matchRef(repo, token, refPath);
+      if (matched) return matched;
+    } catch (err) {
+      // Guessed below
+    }
+    return (refPath.match(/^refs\/(?:heads|tags)\/[^/]+/) || [first])[0];
+  }
+
+  /** The ref (refInfo: {name, refType, currentOid}) in GitHub's data of the page, if any. */
+  _getPageRefInfo() {
+    const find = (value, depth) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 6) return null;
+      if (value.refInfo && typeof value.refInfo.name === 'string') return value.refInfo;
+      for (const child of Object.values(value)) {
+        const found = find(child, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    };
+    for (const script of document.querySelectorAll('script[data-target="react-app.embeddedData"]')) {
+      try {
+        const found = find(JSON.parse(script.textContent), 0);
+        if (found) return found;
+      } catch (err) {
+        // Not JSON
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The longest branch or tag of the repository that the path of a tree or blob URL starts with (keeping its
+   * refs/heads/ or refs/tags/), asking GitHub for those starting with its first name.
+   */
+  async _matchRef(repo, token, refPath) {
+    const qualified = refPath.match(/^refs\/(heads|tags)\/(.+)$/);
+    const path = qualified ? qualified[2] : refPath;
+    for (const kind of qualified ? [qualified[1]] : ['heads', 'tags']) {
+      const prefix = encodeURIComponent(path.split('/')[0]);
+      const refs = await this._getAll(`/git/matching-refs/${kind}/${prefix}`, {repo, token});
+      const found = longestRefOf(path, refs.map((ref) => ref.ref.slice(`refs/${kind}/`.length)));
+      if (found) return qualified ? `refs/${kind}/${found}` : found;
+    }
+    return null;
+  }
+
   // @override
   loadCodeTree(opts, cb) {
-    opts.encodedBranch = encodeURIComponent(decodeURIComponent(opts.repo.branch));
+    opts.encodedBranch = encodeURIComponent(opts.repo.branch);
     opts.path = (opts.node && (opts.node.sha || opts.encodedBranch)) || opts.encodedBranch + '?recursive=1';
     this._loadCodeTreeInternal(opts, null, cb);
   }
@@ -351,9 +414,18 @@ class GitHub extends Adapter {
     if (opts.repo.pullNumber || opts.repo.commitSha) {
       this._getPatch(opts, cb);
     } else {
-      this._get(`/git/trees/${path}`, opts, (err, res) => {
-        if (err) cb(err);
-        else cb(null, res.tree);
+      this._get(`/git/trees/${path}`, opts, async (err, res) => {
+        if (!err) return cb(null, res.tree);
+        // A repository the token can read: there is no such branch, tag or commit, rather than no access
+        if (err.status === 404 && (await this._api('', opts).then(() => true, () => false))) {
+          const ref = escapeHtml(String(opts.repo.branch));
+          return cb({
+            error: 'Error: Not found',
+            message: `GitHub has no branch, tag or commit <code>${ref}</code> in this repository.`,
+            status: 404
+          });
+        }
+        cb(err);
       });
     }
   }

@@ -89,6 +89,33 @@ function pastHalfLife(issuedAt, expiresAt, now = Date.now()) {
   return !isNaN(issued) && !isNaN(expires) && now > issued + (expires - issued) / 2;
 }
 
+/**
+ * The part of a tree or blob URL after /owner/name/tree/ (or blob/), decoded segment by segment: the ref, then the
+ * path ("refs/heads/main/src" for /o/r/tree/refs%2Fheads%2Fmain/src).
+ */
+function refPathOf(pathname) {
+  return pathname
+    .split('/')
+    .slice(4)
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment);
+      } catch (err) {
+        return segment;
+      }
+    })
+    .join('/');
+}
+
+/**
+ * The longest of `refs` (branch, tag or commit names) that `refPath` (refPathOf) starts with, in whole segments:
+ * "feature/x" for "feature/x/src", but not for "feature/x-2/src". Null when none fits.
+ */
+function longestRefOf(refPath, refs) {
+  const fitting = refs.filter((ref) => ref && (refPath === ref || refPath.startsWith(ref + '/')));
+  return fitting.sort((a, b) => b.length - a.length)[0] || null;
+}
+
 window.isValidTimeStamp = isValidTimeStamp;
 window.timeAgo = timeAgo;
 window.sha256Hex = sha256Hex;
@@ -97,3 +124,5 @@ window.stripTags = stripTags;
 window.errorJson = errorJson;
 window.splitName = splitName;
 window.pastHalfLife = pastHalfLife;
+window.refPathOf = refPathOf;
+window.longestRefOf = longestRefOf;

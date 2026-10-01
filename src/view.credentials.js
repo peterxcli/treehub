@@ -63,6 +63,8 @@ class CredentialsView {
       return;
     }
     if (status !== 401 && status !== 403 && !(status === 404 && this._pageShows(settings))) return;
+    // A tree of a repository the token can read: no such branch, tag or commit, rather than no access
+    if (status === 404 && new URL(url).pathname.includes('/git/trees/') && (await this._canRead(url, token))) return;
 
     const headers = {};
     for (const name of CREDENTIAL_HEADERS) {
@@ -96,6 +98,17 @@ class CredentialsView {
     const [, pageOwner = '', pageName = ''] = location.pathname.split('/');
     const samePage = pageOwner.toLowerCase() === owner.toLowerCase() && pageName.toLowerCase() === name.toLowerCase();
     return samePage && (rest === '' || /^\/pulls\/\d+(\/files)?$/.test(rest) || rest.startsWith('/git/trees/'));
+  }
+
+  /** Whether GitHub lets the token (or no token) read the repository of an API URL. */
+  async _canRead(url, token) {
+    const [repoUrl] = url.match(/^https:\/\/api\.github\.com\/repos\/[^/]+\/[^/]+/) || [];
+    if (!repoUrl) return false;
+    try {
+      return (await fetch(repoUrl, {headers: token ? {Authorization: `token ${token}`} : {}})).ok;
+    } catch (err) {
+      return false;
+    }
   }
 
   async _sourceOf(token) {

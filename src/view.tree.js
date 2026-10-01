@@ -242,12 +242,13 @@ class TreeView {
       return;
     }
 
-    // Convert /username/reponame/object_type/branch/path to path
-    const path = decodeURIComponent(location.pathname);
-    const match = path.match(/(?:[^\/]+\/){4}(.*)/);
-    if (!match) return;
-
-    const currentPath = match[1];
+    // Convert /username/reponame/object_type/branch/path to path; the branch can have slashes (refs/heads/main)
+    const refPath = refPathOf(location.pathname);
+    const branch = String(repo.branch);
+    const currentPath = refPath.startsWith(branch + '/')
+      ? refPath.slice(branch.length + 1)
+      : refPath.split('/').slice(1).join('/');
+    if (!currentPath) return;
     const loadAll = await this.adapter.shouldLoadEntireTree(repo);
 
     selectPath(loadAll ? [currentPath] : breakPath(currentPath));
