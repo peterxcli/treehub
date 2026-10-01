@@ -12,11 +12,13 @@ import {
   ListQueueResponseSchema,
   MeResponseSchema,
   OkResponseSchema,
+  PutBookmarkRequestSchema,
   PutQueueItemRequestSchema,
   QueueItemSchema,
   RecordViewRequestSchema,
   RecordViewResponseSchema,
   RefreshSessionResponseSchema,
+  SearchResponseSchema,
   type Bookmark,
   type HistoryItem,
   type QueueItem,
@@ -113,11 +115,18 @@ export function toAccount(user: User): Account {
 }
 
 export function toBookmarkEntry(bookmark: Bookmark): BookmarkEntry {
-  return {repo: bookmark.repo, createdAt: bookmark.createdAt};
+  return {repo: bookmark.repo, createdAt: bookmark.createdAt, note: bookmark.note};
 }
 
 export function toQueueEntry(item: QueueItem): QueueEntry {
-  return {repo: item.repo, number: item.number, title: item.title, addedAt: item.addedAt, lastSeenAt: item.lastSeenAt};
+  return {
+    repo: item.repo,
+    number: item.number,
+    title: item.title,
+    addedAt: item.addedAt,
+    lastSeenAt: item.lastSeenAt,
+    note: item.note
+  };
 }
 
 export async function getMe(session: string): Promise<Account> {
@@ -168,8 +177,13 @@ export async function listBookmarks(session: string): Promise<BookmarkEntry[]> {
   return bookmarks.map(toBookmarkEntry);
 }
 
-export async function putBookmark(session: string, repo: string): Promise<BookmarkEntry> {
-  return toBookmarkEntry(await call(BookmarkSchema, 'PUT', `/api/bookmarks/${repoPath(repo)}`, session));
+/** Bookmarks a repository; a note replaces its note ('' removes it), without one it keeps its note. */
+export async function putBookmark(session: string, repo: string, note?: string): Promise<BookmarkEntry> {
+  const body =
+    note === undefined
+      ? undefined
+      : toJson(PutBookmarkRequestSchema, create(PutBookmarkRequestSchema, {note}), {useProtoFieldName: true});
+  return toBookmarkEntry(await call(BookmarkSchema, 'PUT', `/api/bookmarks/${repoPath(repo)}`, session, body));
 }
 
 export async function deleteBookmark(session: string, repo: string): Promise<void> {
@@ -181,9 +195,49 @@ export async function listQueue(session: string): Promise<QueueEntry[]> {
   return items.map(toQueueEntry);
 }
 
-export async function putQueueItem(session: string, ref: PRRef, title?: string): Promise<QueueEntry> {
-  const body = toJson(PutQueueItemRequestSchema, create(PutQueueItemRequestSchema, {title}), {useProtoFieldName: true});
+/** Queues a pull request; a title or a note replace its own ('' removes the note), else it keeps them. */
+export async function putQueueItem(session: string, ref: PRRef, title?: string, note?: string): Promise<QueueEntry> {
+  const body = toJson(PutQueueItemRequestSchema, create(PutQueueItemRequestSchema, {title, note}), {
+    useProtoFieldName: true
+  });
   return toQueueEntry(await call(QueueItemSchema, 'PUT', `/api/queue/${prPath(ref)}`, session, body));
+}
+
+/** Changes the title or the note of a queued pull request, never queueing it again: 404 when it isn't queued. */
+export async function updateQueueItem(
+  session: string,
+  ref: PRRef,
+  changes: {title?: string; note?: string}
+): Promise<QueueEntry> {
+  const body = toJson(PutQueueItemRequestSchema, create(PutQueueItemRequestSchema, changes), {useProtoFieldName: true});
+  return toQueueEntry(await call(QueueItemSchema, 'PATCH', `/api/queue/${prPath(ref)}`, session, body));
+}
+
+/**
+ * A bookmark or queued pull request found by a search. In the *Match texts, the matching words are between
+ * \u0002 and \u0003 (see markMatches in the dashboard).
+ */
+export interface SearchHit {
+  kind: 'bookmark' | 'queue';
+  repo: string;
+  number: number; // 0 for a bookmark
+  repoMatch: string;
+  titleMatch?: string;
+  noteMatch?: string;
+}
+
+/** The bookmarks and queued pull requests matching every word of the text, best first (BM25, on the server). */
+export async function search(session: string, text: string, limit = 20): Promise<SearchHit[]> {
+  const params = new URLSearchParams({q: text, limit: String(limit)});
+  const {results} = await call(SearchResponseSchema, 'GET', `/api/search?${params}`, session);
+  return results.map((r) => ({
+    kind: r.kind === 'bookmark' ? 'bookmark' : 'queue',
+    repo: r.repo,
+    number: r.number,
+    repoMatch: r.repoMatch,
+    titleMatch: r.titleMatch,
+    noteMatch: r.noteMatch
+  }));
 }
 
 export async function deleteQueueItem(session: string, ref: PRRef): Promise<void> {

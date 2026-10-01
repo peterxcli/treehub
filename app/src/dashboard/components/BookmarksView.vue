@@ -3,6 +3,7 @@ import {computed, onMounted, ref, watch} from 'vue';
 import type {BookmarkEntry, RepoMeta} from '../../lib/storage.ts';
 import {compactNumber, fullTime, parseRepository, timeAgo} from '../format.ts';
 import {busy, clock, request, state, toast} from '../store.ts';
+import NoteEditor from './NoteEditor.vue';
 import Octicon from './Octicon.vue';
 
 interface Card {
@@ -25,7 +26,7 @@ const visible = computed(() => {
   const words = search.value.toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return cards.value;
   return cards.value.filter((card) => {
-    const text = `${card.bookmark.repo} ${(card.meta && card.meta.description) || ''} ${(card.meta && card.meta.language && card.meta.language.name) || ''}`.toLowerCase();
+    const text = `${card.bookmark.repo} ${card.bookmark.note || ''} ${(card.meta && card.meta.description) || ''} ${(card.meta && card.meta.language && card.meta.language.name) || ''}`.toLowerCase();
     return words.every((word) => text.includes(word));
   });
 });
@@ -38,6 +39,9 @@ watch(repoCount, (count, previous) => {
 });
 
 const input = ref('');
+const note = ref('');
+// The bookmark whose note is being edited
+const editingNote = ref<string | null>(null);
 
 async function add() {
   const repo = parseRepository(input.value);
@@ -47,13 +51,30 @@ async function add() {
   }
   if (cards.value.some((card) => card.bookmark.repo.toLowerCase() === repo.toLowerCase())) {
     toast(`${repo} is already bookmarked.`);
-    input.value = '';
+    // Keeps a note typed for it, to put it there
+    if (!note.value.trim()) input.value = '';
     return;
   }
-  const result = await request('add', {type: 'treehub:setBookmark', repo, on: true});
+  const submitted = {input: input.value, note: note.value};
+  const result = await request('add', {type: 'treehub:setBookmark', repo, on: true, note: note.value.trim() || undefined});
   if (result !== undefined) {
-    input.value = '';
+    // Unless the next one is being typed already
+    if (input.value === submitted.input) input.value = '';
+    if (note.value === submitted.note) note.value = '';
     toast(`Bookmarked ${repo}.`);
+  }
+}
+
+async function saveNote(card: Card, text: string) {
+  const {repo} = card.bookmark;
+  const result = await request(`bookmark:${repo}`, {type: 'treehub:setNote', repo, note: text});
+  if (result !== undefined) toast(text ? 'Note saved.' : 'Note removed.');
+}
+
+function submitOnCtrlEnter(event: KeyboardEvent) {
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    void add();
   }
 }
 
@@ -62,7 +83,7 @@ async function remove(card: Card) {
   const result = await request(`bookmark:${repo}`, {type: 'treehub:setBookmark', repo, on: false});
   if (result === undefined) return;
   toast(`Removed the bookmark of ${repo}.`, {
-    action: {label: 'Undo', run: () => void request('undo', {type: 'treehub:setBookmark', repo, on: true})}
+    action: {label: 'Undo', run: () => void request('undo', {type: 'treehub:setBookmark', repo, on: true, note: card.bookmark.note})}
   });
 }
 </script>
@@ -80,17 +101,29 @@ async function remove(card: Card) {
       </label>
     </div>
 
-    <form class="add-form" @submit.prevent="add">
-      <Octicon name="plus" class="add-icon" />
-      <input
-        v-model="input"
-        type="text"
-        placeholder="Bookmark a repository: type owner/name or paste its URL"
-        aria-label="Repository to bookmark"
-        spellcheck="false"
-        autocomplete="off"
+    <form class="add" @submit.prevent="add">
+      <div class="add-form">
+        <Octicon name="plus" class="add-icon" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="Bookmark a repository: type owner/name or paste its URL"
+          aria-label="Repository to bookmark"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <button type="submit" class="btn btn-primary" :disabled="busy.add || !input.trim()">Add</button>
+      </div>
+      <textarea
+        v-if="input.trim() || note"
+        v-model="note"
+        class="add-note"
+        rows="2"
+        maxlength="2000"
+        placeholder="Note (optional): what it is to you… You can search notes."
+        aria-label="Note"
+        @keydown="submitOnCtrlEnter"
       />
-      <button type="submit" class="btn btn-primary" :disabled="busy.add || !input.trim()">Add</button>
     </form>
 
     <div v-if="visible.length" class="cards">
@@ -101,20 +134,39 @@ async function remove(card: Card) {
             <span class="owner">{{ card.owner }} /</span> <strong>{{ card.name }}</strong>
           </a>
           <span v-if="card.meta && card.meta.isArchived" class="label">Archived</span>
-          <button
-            type="button"
-            class="icon-button bookmarked"
-            title="Remove bookmark"
-            aria-label="Remove bookmark"
-            @click="remove(card)"
-          >
-            <Octicon name="bookmark-fill" />
-          </button>
+          <span class="card-actions">
+            <button
+              type="button"
+              class="icon-button"
+              :class="{selected: editingNote === card.bookmark.repo}"
+              :title="card.bookmark.note ? 'Edit the note' : 'Add a note'"
+              :aria-label="card.bookmark.note ? 'Edit the note' : 'Add a note'"
+              @click="editingNote = editingNote === card.bookmark.repo ? null : card.bookmark.repo"
+            >
+              <Octicon name="note" />
+            </button>
+            <button
+              type="button"
+              class="icon-button bookmarked"
+              title="Remove bookmark"
+              aria-label="Remove bookmark"
+              @click="remove(card)"
+            >
+              <Octicon name="bookmark-fill" />
+            </button>
+          </span>
         </header>
         <p v-if="card.meta && card.meta.error" class="card-error">{{ card.meta.error }}</p>
         <p v-else class="description" :class="{muted: !card.meta || !card.meta.description}">
           {{ card.meta ? card.meta.description || 'No description' : 'Loading…' }}
         </p>
+        <NoteEditor
+          :editing="editingNote === card.bookmark.repo"
+          :note="card.bookmark.note"
+          :busy="busy[`bookmark:${card.bookmark.repo}`]"
+          @update:editing="editingNote = $event ? card.bookmark.repo : null"
+          @save="saveNote(card, $event)"
+        />
         <footer v-if="card.meta && !card.meta.error">
           <span v-if="card.meta.language" class="language">
             <span class="language-color" :style="{backgroundColor: card.meta.language.color || '#8b949e'}" />

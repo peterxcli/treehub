@@ -50,12 +50,17 @@ async function handle(request: Request): Promise<unknown> {
     case 'treehub:refreshRepos':
       return hub.refreshRepos(request.force);
     case 'treehub:setBookmark':
-      return hub.setBookmark(request.repo, request.on);
+      return hub.setBookmark(request.repo, request.on, request.note);
     case 'treehub:setQueued':
       return hub.setQueued({repo: request.repo, number: request.number}, request.on, {
         title: request.title,
-        seen: request.seen
+        seen: request.seen,
+        note: request.note
       });
+    case 'treehub:setNote':
+      return hub.setNote({repo: request.repo, number: request.number}, request.note);
+    case 'treehub:search':
+      return hub.search(request.text, request.limit);
     case 'treehub:seen':
       return hub.markSeen({repo: request.repo, number: request.number}, request.force);
     case 'treehub:openDashboard':

@@ -56,6 +56,7 @@ func newTestEnv(t *testing.T, cfg Config) *testEnv {
 	}
 	e.srv = &Server{
 		Q:        db.New(e.db),
+		DB:       e.db,
 		Sessions: sessions,
 		GitHub:   &auth.GitHub{ClientID: "client-id", ClientSecret: "client-secret", HTTP: &http.Client{Transport: e.github}},
 		Cfg:      cfg,

@@ -128,6 +128,7 @@ const visible = computed(() => {
 // ---------- Actions ----------
 
 const input = ref('');
+const note = ref('');
 
 async function add() {
   const pr = parsePullRequest(input.value);
@@ -137,22 +138,45 @@ async function add() {
   }
   if (rows.value.some((row) => row.key === prKey(pr))) {
     toast(`${pr.repo}#${pr.number} is already in your queue.`);
-    input.value = '';
+    // Keeps a note typed for it, to put it there
+    if (!note.value.trim()) input.value = '';
     return;
   }
-  const result = await request('add', {type: 'treehub:setQueued', repo: pr.repo, number: pr.number, on: true});
+  const submitted = {input: input.value, note: note.value};
+  const result = await request('add', {
+    type: 'treehub:setQueued',
+    repo: pr.repo,
+    number: pr.number,
+    on: true,
+    note: note.value.trim() || undefined
+  });
   if (result !== undefined) {
-    input.value = '';
+    // Unless the next one is being typed already
+    if (input.value === submitted.input) input.value = '';
+    if (note.value === submitted.note) note.value = '';
     toast(`Added ${pr.repo}#${pr.number} to your queue.`);
   }
 }
 
+async function saveNote(row: Row, text: string) {
+  const {repo, number} = row.entry;
+  const result = await request(`row:${row.key}`, {type: 'treehub:setNote', repo, number, note: text});
+  if (result !== undefined) toast(text ? 'Note saved.' : 'Note removed.');
+}
+
+function submitOnCtrlEnter(event: KeyboardEvent) {
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    void add();
+  }
+}
+
 async function remove(row: Row) {
-  const {repo, number, title} = row.entry;
+  const {repo, number, title, note} = row.entry;
   const result = await request(`row:${row.key}`, {type: 'treehub:setQueued', repo, number, on: false});
   if (result === undefined) return;
   toast(`Removed ${repo}#${number} from your queue.`, {
-    action: {label: 'Undo', run: () => void request('undo', {type: 'treehub:setQueued', repo, number, on: true, title})}
+    action: {label: 'Undo', run: () => void request('undo', {type: 'treehub:setQueued', repo, number, on: true, title, note})}
   });
 }
 
@@ -184,17 +208,29 @@ async function refresh() {
       </button>
     </div>
 
-    <form class="add-form" @submit.prevent="add">
-      <Octicon name="plus" class="add-icon" />
-      <input
-        v-model="input"
-        type="text"
-        placeholder="Add a pull request: paste its URL or type owner/repo#123"
-        aria-label="Pull request to add"
-        spellcheck="false"
-        autocomplete="off"
+    <form class="add" @submit.prevent="add">
+      <div class="add-form">
+        <Octicon name="plus" class="add-icon" />
+        <input
+          v-model="input"
+          type="text"
+          placeholder="Add a pull request: paste its URL or type owner/repo#123"
+          aria-label="Pull request to add"
+          spellcheck="false"
+          autocomplete="off"
+        />
+        <button type="submit" class="btn btn-primary" :disabled="busy.add || !input.trim()">Add</button>
+      </div>
+      <textarea
+        v-if="input.trim() || note"
+        v-model="note"
+        class="add-note"
+        rows="2"
+        maxlength="2000"
+        placeholder="Note (optional): why you follow it, what to check… You can search notes."
+        aria-label="Note"
+        @keydown="submitOnCtrlEnter"
       />
-      <button type="submit" class="btn btn-primary" :disabled="busy.add || !input.trim()">Add</button>
     </form>
 
     <CredentialProblemCard v-if="statuses && statuses.problem" :problem="statuses.problem">
@@ -254,6 +290,7 @@ async function refresh() {
           :busy="busy[`row:${row.key}`]"
           @remove="remove(row)"
           @seen="markSeen(row)"
+          @note="saveNote(row, $event)"
         />
       </ul>
       <div v-else class="blankslate">

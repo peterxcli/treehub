@@ -23,10 +23,19 @@ func (s *Server) listBookmarks(r *http.Request) (any, error) {
 	return res, nil
 }
 
-// putBookmark is idempotent: saving an existing bookmark keeps its created_at.
+// putBookmark is idempotent: saving an existing bookmark keeps its created_at,
+// and its note unless the body carries one.
 func (s *Server) putBookmark(r *http.Request) (any, error) {
 	u := userFrom(r.Context())
 	repo, err := repoParam(r)
+	if err != nil {
+		return nil, err
+	}
+	var body treehubv1.PutBookmarkRequest
+	if err := readJSON(r, &body); err != nil {
+		return nil, badRequest("invalid_body", err)
+	}
+	note, err := noteParam(body.Note)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +55,7 @@ func (s *Server) putBookmark(r *http.Request) (any, error) {
 	case err != nil:
 		return nil, err
 	}
-	b, err := s.Q.UpsertBookmark(ctx, db.UpsertBookmarkParams{Login: u.Login, Repo: repo})
+	b, err := s.Q.UpsertBookmark(ctx, db.UpsertBookmarkParams{Login: u.Login, Repo: repo, Note: note, NoteTerms: terms(note)})
 	if err != nil {
 		return nil, err
 	}

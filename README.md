@@ -1,6 +1,6 @@
 # TreeHub
 
-Browser extension that adds an IDE-like code tree, pull request review tools, repository bookmarks and a pull request review queue to GitHub.
+Browser extension that adds an IDE-like code tree, pull request review tools, repository bookmarks and a pull request review queue, with notes you can search, to GitHub.
 
 <img src="docs/screenshots/overview.png" width="1280" alt="TreeHub's sidebar next to a pull request: the files it changes, with their additions and deletions, and its review conversations">
 
@@ -44,7 +44,7 @@ Pin, resize and dock it on the left or right; double-click its edge to fit it to
 
 ### Bookmarks
 
-Click the bookmark icon in the sidebar to bookmark the current repository. It turns bold once bookmarked; click it again to remove the bookmark. The dashboard lists them.
+Click the bookmark icon in the sidebar to bookmark the current repository. It turns bold once bookmarked; click it again to remove the bookmark. The dashboard lists them, and can add them too.
 
 <img src="docs/screenshots/bookmarks.png" width="1100" alt="The bookmarks in the dashboard">
 
@@ -53,6 +53,16 @@ Click the bookmark icon in the sidebar to bookmark the current repository. It tu
 On a pull request, click the review icon in the sidebar to follow it (bold when queued). TreeHub then tracks, for you, independent statuses of each queued pull request: review requested, new commits since your review, replies to your review comments (and who replied), when you were last mentioned, updates since you last looked, approved, approved by you, your other reviews, changes requested, checks, merge conflicts, draft, ready for review, merged and closed. Queued pull requests are refreshed every 15 minutes, and the toolbar icon counts those that need your attention.
 
 <img src="docs/screenshots/review-queue.png" width="1100" alt="The review queue in the dashboard: filters by status and the statuses of each pull request">
+
+### Notes and search
+
+When you bookmark a repository or queue a pull request, the sidebar offers to add a note: why you follow it, what to check (<kbd>⌘</kbd>+<kbd>Enter</kbd> saves it, <kbd>Esc</kbd> skips). The dashboard's add forms take a note too, and the note button of each bookmark or queued pull request adds, edits or removes it later.
+
+<img src="docs/screenshots/note-prompt.png" width="560" alt="The sidebar after bookmarking a repository, offering to add a note">
+
+The Search tab of the dashboard (or <kbd>/</kbd>) searches your notes, the titles of your queued pull requests and the names of the repositories. Results come best first (ranked with BM25, a note counting more than a title, and a title more than a repository name) with the matching words highlighted. Words are found in other forms too ("review" finds "reviewing"), the last one while you type it, and Chinese, Japanese and Korean text as well.
+
+<img src="docs/screenshots/search.png" width="1100" alt="Searching for checksum: two queued pull requests and a bookmark, with the word highlighted in their titles and notes">
 
 ### Credential problems explained
 
@@ -68,7 +78,7 @@ While you are signed in, TreeHub remembers the repositories and pull requests yo
 
 ### Dashboard
 
-The extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, your bookmarks and your history. If you get signed out without asking (e.g. the sign-in expired), the sidebar says so and the toolbar icon shows an orange "!".
+The extension's own page (toolbar icon, or the home icon in the sidebar) lists your review queue, with filters by status, your bookmarks and your history, and searches your notes. If you get signed out without asking (e.g. the sign-in expired), the sidebar says so and the toolbar icon shows an orange "!".
 
 <img src="docs/screenshots/signed-out.png" width="760" alt="The sidebar saying that TreeHub signed you out, with Sign in again">
 
@@ -90,7 +100,7 @@ Pin or unpin the sidebar with <kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>s</kbd> (macOS)
 
 ## Privacy
 
-Without signing in, TreeHub talks only to GitHub and collects nothing. When you sign in, the TreeHub server keeps your GitHub handle and profile, your bookmarks, your queued pull requests and when you last opened them; your GitHub token stays in your browser (the server only passes it on when you sign in, and when it renews a token that GitHub made expire), and statuses are computed there. See the [privacy policy](PRIVACY.md).
+Without signing in, TreeHub talks only to GitHub and collects nothing. When you sign in, the TreeHub server keeps your GitHub handle and profile, your bookmarks, your queued pull requests and when you last opened them, and your notes on them; your GitHub token stays in your browser (the server only passes it on when you sign in, and when it renews a token that GitHub made expire), and statuses are computed there. See the [privacy policy](PRIVACY.md).
 
 ## Development
 

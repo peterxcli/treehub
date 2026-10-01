@@ -40,6 +40,8 @@ const VIEW_THROTTLE_MS = 60 * 1000;
 const PAUSED_RECHECK_MS = 30 * 60 * 1000;
 // Visiting a pull request again within this time does not record another visit.
 const SEEN_THROTTLE_MS = 30 * 1000;
+// Characters of a pull request title the server keeps
+const MAX_TITLE_LENGTH = 300;
 
 const now = () => new Date().toISOString();
 const sameRepo = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
@@ -312,25 +314,37 @@ export async function sync(): Promise<void> {
 
 // ---------- Bookmarks ----------
 
-export async function setBookmark(repo: string, on: boolean): Promise<void> {
+/** Bookmarks a repository or removes the bookmark. A note, when bookmarking, replaces its note ('' removes it). */
+export async function setBookmark(repo: string, on: boolean, note?: string): Promise<void> {
   const auth = await requireAuth();
   const {hub} = await load();
   const previous = hub && hub.bookmarks.find((b) => sameRepo(b.repo, repo));
   const without = (bookmarks: BookmarkEntry[]) => bookmarks.filter((b) => !sameRepo(b.repo, repo));
+  const withNote = (b: BookmarkEntry) => (note === undefined ? b : {...b, note: note.trim() || undefined});
+  // An existing bookmark stays in its place (they're listed by creation)
+  const restore = (bookmarks: BookmarkEntry[]) =>
+    previous ? bookmarks.map((b) => (sameRepo(b.repo, repo) ? previous : b)) : without(bookmarks);
 
   await updateHub(auth, (h) => ({
     ...h,
-    bookmarks: on ? [previous || {repo, createdAt: now()}, ...without(h.bookmarks)] : without(h.bookmarks)
+    bookmarks: on
+      ? previous
+        ? h.bookmarks.map((b) => (sameRepo(b.repo, repo) ? withNote(b) : b))
+        : [withNote({repo, createdAt: now()}), ...without(h.bookmarks)]
+      : without(h.bookmarks)
   }));
   try {
     if (on) {
-      const entry = await backend(api.putBookmark(auth.session, repo));
+      const entry = await backend(api.putBookmark(auth.session, repo, note));
       await updateHub(auth, (h) => ({...h, bookmarks: h.bookmarks.map((b) => (sameRepo(b.repo, repo) ? entry : b))}));
     } else {
       await backend(api.deleteBookmark(auth.session, repo));
     }
   } catch (err) {
-    await updateHub(auth, (h) => ({...h, bookmarks: previous ? [previous, ...without(h.bookmarks)] : without(h.bookmarks)}));
+    await updateHub(auth, (h) => ({
+      ...h,
+      bookmarks: previous && !h.bookmarks.some((b) => sameRepo(b.repo, repo)) ? [previous, ...h.bookmarks] : restore(h.bookmarks)
+    }));
     throw err;
   }
 }
@@ -366,25 +380,34 @@ export async function refreshRepos(force = false): Promise<void> {
 
 // ---------- Review queue ----------
 
-export async function setQueued(ref: PRRef, on: boolean, options: {title?: string; seen?: boolean} = {}): Promise<void> {
+/**
+ * Queues a pull request or removes it from the queue. When queueing, a title or a note replace its own ('' removes
+ * the note).
+ */
+export async function setQueued(
+  ref: PRRef,
+  on: boolean,
+  options: {title?: string; seen?: boolean; note?: string} = {}
+): Promise<void> {
   const auth = await requireAuth();
   const key = prKey(ref);
   const {hub} = await load();
   const previous = hub && hub.queue.find((e) => prKey(e) === key);
   const without = (queue: QueueEntry[]) => queue.filter((e) => prKey(e) !== key);
   const title = options.title || (previous && previous.title);
+  const note = options.note === undefined ? previous && previous.note : options.note.trim() || undefined;
 
   await updateHub(auth, (h) => ({
     ...h,
     queue: on
       ? previous
-        ? h.queue.map((e) => (prKey(e) === key ? {...e, title} : e))
-        : [{repo: ref.repo, number: ref.number, title, addedAt: now()}, ...without(h.queue)]
+        ? h.queue.map((e) => (prKey(e) === key ? {...e, title, note} : e))
+        : [{repo: ref.repo, number: ref.number, title, note, addedAt: now()}, ...without(h.queue)]
       : without(h.queue)
   }));
   try {
     if (on) {
-      let entry = await backend(api.putQueueItem(auth.session, ref, options.title));
+      let entry = await backend(api.putQueueItem(auth.session, ref, options.title, options.note));
       // Queued while looking at it
       if (options.seen) entry = await backend(api.markSeen(auth.session, ref));
       await updateHub(auth, (h) => ({...h, queue: h.queue.map((e) => (prKey(e) === key ? entry : e))}));
@@ -392,12 +415,48 @@ export async function setQueued(ref: PRRef, on: boolean, options: {title?: strin
       await backend(api.deleteQueueItem(auth.session, ref));
     }
   } catch (err) {
-    await updateHub(auth, (h) => ({...h, queue: previous ? [previous, ...without(h.queue)] : without(h.queue)}));
+    // Back as it was, in its place
+    await updateHub(auth, (h) => ({
+      ...h,
+      queue: previous
+        ? h.queue.some((e) => prKey(e) === key)
+          ? h.queue.map((e) => (prKey(e) === key ? previous : e))
+          : [previous, ...h.queue]
+        : without(h.queue)
+    }));
     throw err;
   }
 
   if (on) void refreshStatuses([ref]);
   else await forgetStates(auth, [key]);
+}
+
+/** A bookmark (no number) or a queued pull request. */
+export interface NoteTarget {
+  repo: string;
+  number?: number;
+}
+
+/** Replaces the note of a bookmark or a queued pull request ('' removes it). */
+export async function setNote(target: NoteTarget, note: string): Promise<void> {
+  const {hub} = await load();
+  if (target.number === undefined) {
+    if (!(hub && hub.bookmarks.some((b) => sameRepo(b.repo, target.repo)))) {
+      throw new Error(`${target.repo} is not bookmarked anymore.`);
+    }
+    return setBookmark(target.repo, true, note);
+  }
+  const ref = {repo: target.repo, number: target.number};
+  if (!(hub && hub.queue.some((e) => prKey(e) === prKey(ref)))) {
+    throw new Error(`${ref.repo}#${ref.number} is not in your review queue anymore.`);
+  }
+  return setQueued(ref, true, {note});
+}
+
+/** Searches the notes, titles and repositories of the bookmarks and the queue (see api.search). */
+export async function search(text: string, limit?: number): Promise<api.SearchHit[]> {
+  const auth = await requireAuth();
+  return backend(api.search(auth.session, text, limit));
 }
 
 /**
@@ -499,6 +558,41 @@ async function runRefresh(refs?: PRRef[]): Promise<void> {
     });
   });
   await updateBadge();
+  if (fetched) void saveTitles(auth, states);
+}
+
+/** A title as the server keeps it (normalizeTitle in server/internal/api/validate.go). */
+function storedTitle(title: string): string {
+  const chars = Array.from(title.trim());
+  return chars.length > MAX_TITLE_LENGTH ? chars.slice(0, MAX_TITLE_LENGTH).join('').trim() : title.trim();
+}
+
+/**
+ * Saves the titles read on GitHub of the queued pull requests whose title the server lacks (queued from the
+ * dashboard) or has since changed, to find them by their titles. Only updates: a pull request removed meanwhile
+ * stays removed.
+ */
+async function saveTitles(auth: Auth, states: Record<string, PRState>): Promise<void> {
+  const {auth: current, hub} = await load();
+  if (!hub || !sameLogin(current, auth.account.login)) return;
+  for (const entry of hub.queue) {
+    const key = prKey(entry);
+    const state = states[key];
+    const title = state && !state.error && state.title ? storedTitle(state.title) : '';
+    if (!title || title === entry.title) continue;
+    try {
+      const updated = await backend(api.updateQueueItem(auth.session, entry, {title}));
+      await updateHub(auth, (h) => ({
+        ...h,
+        queue: h.queue.map((e) => (prKey(e) === key ? {...e, title: updated.title} : e))
+      }));
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) return; // the next refresh tries again
+      // Removed in another browser
+      await updateHub(auth, (h) => ({...h, queue: h.queue.filter((e) => prKey(e) !== key)}));
+      await forgetStates(auth, [key]);
+    }
+  }
 }
 
 // ---------- History ----------

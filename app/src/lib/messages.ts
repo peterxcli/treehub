@@ -9,8 +9,10 @@ export type Request =
   | {type: 'treehub:sync'}
   | {type: 'treehub:refresh'; ifOlderThanMs?: number}
   | {type: 'treehub:refreshRepos'; force?: boolean}
-  | {type: 'treehub:setBookmark'; repo: string; on: boolean}
-  | {type: 'treehub:setQueued'; repo: string; number: number; on: boolean; title?: string; seen?: boolean}
+  | {type: 'treehub:setBookmark'; repo: string; on: boolean; note?: string}
+  | {type: 'treehub:setQueued'; repo: string; number: number; on: boolean; title?: string; seen?: boolean; note?: string}
+  | {type: 'treehub:setNote'; repo: string; number?: number; note: string}
+  | {type: 'treehub:search'; text: string; limit?: number}
   | {type: 'treehub:seen'; repo: string; number: number; force?: boolean}
   | {type: 'treehub:openDashboard'; view?: 'queue' | 'bookmarks'}
   | {type: 'treehub:explainCredentials'; response: ResponseInfo; source: 'settings' | 'signin' | 'none'}

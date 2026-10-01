@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file treehub/v1/api.proto.
  */
 export const file_treehub_v1_api: GenFile = /*@__PURE__*/
-  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiKQoWUmVmcmVzaFNlc3Npb25SZXNwb25zZRIPCgdzZXNzaW9uGAEgASgJIjIKGVJlZnJlc2hHaXRIdWJUb2tlblJlcXVlc3QSFQoNcmVmcmVzaF90b2tlbhgBIAEoCSK9AQoLR2l0SHViVG9rZW4SFAoMYWNjZXNzX3Rva2VuGAEgASgJEhcKCmV4cGlyZXNfYXQYAiABKAlIAIgBARIaCg1yZWZyZXNoX3Rva2VuGAMgASgJSAGIAQESJQoYcmVmcmVzaF90b2tlbl9leHBpcmVzX2F0GAQgASgJSAKIAQFCDQoLX2V4cGlyZXNfYXRCEAoOX3JlZnJlc2hfdG9rZW5CGwoZX3JlZnJlc2hfdG9rZW5fZXhwaXJlc19hdCIsCghCb29rbWFyaxIMCgRyZXBvGAEgASgJEhIKCmNyZWF0ZWRfYXQYAiABKAkiQAoVTGlzdEJvb2ttYXJrc1Jlc3BvbnNlEicKCWJvb2ttYXJrcxgBIAMoCzIULnRyZWVodWIudjEuQm9va21hcmsihQEKCVF1ZXVlSXRlbRIMCgRyZXBvGAEgASgJEg4KBm51bWJlchgCIAEoBRISCgV0aXRsZRgDIAEoCUgAiAEBEhAKCGFkZGVkX2F0GAQgASgJEhkKDGxhc3Rfc2Vlbl9hdBgFIAEoCUgBiAEBQggKBl90aXRsZUIPCg1fbGFzdF9zZWVuX2F0IjkKEUxpc3RRdWV1ZVJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUudHJlZWh1Yi52MS5RdWV1ZUl0ZW0iMwoTUHV0UXVldWVJdGVtUmVxdWVzdBISCgV0aXRsZRgBIAEoCUgAiAEBQggKBl90aXRsZSJACg1FcnJvclJlc3BvbnNlEg0KBWVycm9yGAEgASgJEhQKB21lc3NhZ2UYAiABKAlIAIgBAUIKCghfbWVzc2FnZSIYCgpPa1Jlc3BvbnNlEgoKAm9rGAEgASgIIpwBCgtIaXN0b3J5SXRlbRIMCgRraW5kGAEgASgJEgwKBHJlcG8YAiABKAkSDgoGbnVtYmVyGAMgASgFEhIKBXRpdGxlGAQgASgJSACIAQESFwoPZmlyc3Rfdmlld2VkX2F0GAUgASgJEhYKDmxhc3Rfdmlld2VkX2F0GAYgASgJEhIKCnZpZXdfY291bnQYByABKAVCCAoGX3RpdGxlImcKE0xpc3RIaXN0b3J5UmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy50cmVlaHViLnYxLkhpc3RvcnlJdGVtEhgKC25leHRfY3Vyc29yGAIgASgJSACIAQFCDgoMX25leHRfY3Vyc29yIjEKEVJlY29yZFZpZXdSZXF1ZXN0EhIKBXRpdGxlGAEgASgJSACIAQFCCAoGX3RpdGxlIlkKElJlY29yZFZpZXdSZXNwb25zZRIqCgRpdGVtGAEgASgLMhcudHJlZWh1Yi52MS5IaXN0b3J5SXRlbUgAiAEBEg4KBnBhdXNlZBgCIAEoCEIHCgVfaXRlbSI5Cg9IaXN0b3J5U2V0dGluZ3MSFgoOcmV0ZW50aW9uX2RheXMYASABKAUSDgoGcGF1c2VkGAIgASgIQkFaP2dpdGh1Yi5jb20vcGV0ZXJ4Y2xpL3RyZWVodWIvc2VydmVyL2dlbi9nby90cmVlaHViL3YxO3RyZWVodWJ2MWIGcHJvdG8z");
+  fileDesc("ChR0cmVlaHViL3YxL2FwaS5wcm90bxIKdHJlZWh1Yi52MSKEAQoEVXNlchINCgVsb2dpbhgBIAEoCRIVCglnaXRodWJfaWQYAiABKANCAjABEhEKBG5hbWUYAyABKAlIAIgBARIXCgphdmF0YXJfdXJsGAQgASgJSAGIAQESEgoKY3JlYXRlZF9hdBgFIAEoCUIHCgVfbmFtZUINCgtfYXZhdGFyX3VybCIsCgpNZVJlc3BvbnNlEh4KBHVzZXIYASABKAsyEC50cmVlaHViLnYxLlVzZXIiKQoWUmVmcmVzaFNlc3Npb25SZXNwb25zZRIPCgdzZXNzaW9uGAEgASgJIjIKGVJlZnJlc2hHaXRIdWJUb2tlblJlcXVlc3QSFQoNcmVmcmVzaF90b2tlbhgBIAEoCSK9AQoLR2l0SHViVG9rZW4SFAoMYWNjZXNzX3Rva2VuGAEgASgJEhcKCmV4cGlyZXNfYXQYAiABKAlIAIgBARIaCg1yZWZyZXNoX3Rva2VuGAMgASgJSAGIAQESJQoYcmVmcmVzaF90b2tlbl9leHBpcmVzX2F0GAQgASgJSAKIAQFCDQoLX2V4cGlyZXNfYXRCEAoOX3JlZnJlc2hfdG9rZW5CGwoZX3JlZnJlc2hfdG9rZW5fZXhwaXJlc19hdCJICghCb29rbWFyaxIMCgRyZXBvGAEgASgJEhIKCmNyZWF0ZWRfYXQYAiABKAkSEQoEbm90ZRgDIAEoCUgAiAEBQgcKBV9ub3RlIjAKElB1dEJvb2ttYXJrUmVxdWVzdBIRCgRub3RlGAEgASgJSACIAQFCBwoFX25vdGUiQAoVTGlzdEJvb2ttYXJrc1Jlc3BvbnNlEicKCWJvb2ttYXJrcxgBIAMoCzIULnRyZWVodWIudjEuQm9va21hcmsioQEKCVF1ZXVlSXRlbRIMCgRyZXBvGAEgASgJEg4KBm51bWJlchgCIAEoBRISCgV0aXRsZRgDIAEoCUgAiAEBEhAKCGFkZGVkX2F0GAQgASgJEhkKDGxhc3Rfc2Vlbl9hdBgFIAEoCUgBiAEBEhEKBG5vdGUYBiABKAlIAogBAUIICgZfdGl0bGVCDwoNX2xhc3Rfc2Vlbl9hdEIHCgVfbm90ZSI5ChFMaXN0UXVldWVSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLnRyZWVodWIudjEuUXVldWVJdGVtIk8KE1B1dFF1ZXVlSXRlbVJlcXVlc3QSEgoFdGl0bGUYASABKAlIAIgBARIRCgRub3RlGAIgASgJSAGIAQFCCAoGX3RpdGxlQgcKBV9ub3RlIqABCgxTZWFyY2hSZXN1bHQSDAoEa2luZBgBIAEoCRIMCgRyZXBvGAIgASgJEg4KBm51bWJlchgDIAEoBRISCgpyZXBvX21hdGNoGAQgASgJEhgKC3RpdGxlX21hdGNoGAUgASgJSACIAQESFwoKbm90ZV9tYXRjaBgGIAEoCUgBiAEBQg4KDF90aXRsZV9tYXRjaEINCgtfbm90ZV9tYXRjaCI7Cg5TZWFyY2hSZXNwb25zZRIpCgdyZXN1bHRzGAEgAygLMhgudHJlZWh1Yi52MS5TZWFyY2hSZXN1bHQiQAoNRXJyb3JSZXNwb25zZRINCgVlcnJvchgBIAEoCRIUCgdtZXNzYWdlGAIgASgJSACIAQFCCgoIX21lc3NhZ2UiGAoKT2tSZXNwb25zZRIKCgJvaxgBIAEoCCKcAQoLSGlzdG9yeUl0ZW0SDAoEa2luZBgBIAEoCRIMCgRyZXBvGAIgASgJEg4KBm51bWJlchgDIAEoBRISCgV0aXRsZRgEIAEoCUgAiAEBEhcKD2ZpcnN0X3ZpZXdlZF9hdBgFIAEoCRIWCg5sYXN0X3ZpZXdlZF9hdBgGIAEoCRISCgp2aWV3X2NvdW50GAcgASgFQggKBl90aXRsZSJnChNMaXN0SGlzdG9yeVJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcudHJlZWh1Yi52MS5IaXN0b3J5SXRlbRIYCgtuZXh0X2N1cnNvchgCIAEoCUgAiAEBQg4KDF9uZXh0X2N1cnNvciIxChFSZWNvcmRWaWV3UmVxdWVzdBISCgV0aXRsZRgBIAEoCUgAiAEBQggKBl90aXRsZSJZChJSZWNvcmRWaWV3UmVzcG9uc2USKgoEaXRlbRgBIAEoCzIXLnRyZWVodWIudjEuSGlzdG9yeUl0ZW1IAIgBARIOCgZwYXVzZWQYAiABKAhCBwoFX2l0ZW0iOQoPSGlzdG9yeVNldHRpbmdzEhYKDnJldGVudGlvbl9kYXlzGAEgASgFEg4KBnBhdXNlZBgCIAEoCEJBWj9naXRodWIuY29tL3BldGVyeGNsaS90cmVlaHViL3NlcnZlci9nZW4vZ28vdHJlZWh1Yi92MTt0cmVlaHVidjFiBnByb3RvMw");
 
 /**
  * A GitHub user signed in to TreeHub. The GitHub handle (login) identifies the user.
@@ -287,6 +287,13 @@ export type Bookmark = Message<"treehub.v1.Bookmark"> & {
    * @generated from field: string created_at = 2;
    */
   createdAt: string;
+
+  /**
+   * the user's note
+   *
+   * @generated from field: optional string note = 3;
+   */
+  note?: string | undefined;
 };
 
 /**
@@ -308,6 +315,13 @@ export type BookmarkJson = {
    * @generated from field: string created_at = 2;
    */
   createdAt?: string;
+
+  /**
+   * the user's note
+   *
+   * @generated from field: optional string note = 3;
+   */
+  note?: string;
 };
 
 /**
@@ -316,6 +330,43 @@ export type BookmarkJson = {
  */
 export const BookmarkSchema: GenMessage<Bookmark, {jsonType: BookmarkJson}> = /*@__PURE__*/
   messageDesc(file_treehub_v1_api, 5);
+
+/**
+ * Body of PUT /api/bookmarks/{owner}/{name}, optional. A note replaces the bookmark's note (an empty one removes it);
+ * without one, the bookmark keeps its note.
+ *
+ * @generated from message treehub.v1.PutBookmarkRequest
+ */
+export type PutBookmarkRequest = Message<"treehub.v1.PutBookmarkRequest"> & {
+  /**
+   * at most 2000 characters
+   *
+   * @generated from field: optional string note = 1;
+   */
+  note?: string | undefined;
+};
+
+/**
+ * Body of PUT /api/bookmarks/{owner}/{name}, optional. A note replaces the bookmark's note (an empty one removes it);
+ * without one, the bookmark keeps its note.
+ *
+ * @generated from message treehub.v1.PutBookmarkRequest
+ */
+export type PutBookmarkRequestJson = {
+  /**
+   * at most 2000 characters
+   *
+   * @generated from field: optional string note = 1;
+   */
+  note?: string;
+};
+
+/**
+ * Describes the message treehub.v1.PutBookmarkRequest.
+ * Use `create(PutBookmarkRequestSchema)` to create a new message.
+ */
+export const PutBookmarkRequestSchema: GenMessage<PutBookmarkRequest, {jsonType: PutBookmarkRequestJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 6);
 
 /**
  * @generated from message treehub.v1.ListBookmarksResponse
@@ -346,7 +397,7 @@ export type ListBookmarksResponseJson = {
  * Use `create(ListBookmarksResponseSchema)` to create a new message.
  */
 export const ListBookmarksResponseSchema: GenMessage<ListBookmarksResponse, {jsonType: ListBookmarksResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 6);
+  messageDesc(file_treehub_v1_api, 7);
 
 /**
  * A pull request in the user's review queue. Its statuses are computed by the extension
@@ -387,6 +438,13 @@ export type QueueItem = Message<"treehub.v1.QueueItem"> & {
    * @generated from field: optional string last_seen_at = 5;
    */
   lastSeenAt?: string | undefined;
+
+  /**
+   * the user's note
+   *
+   * @generated from field: optional string note = 6;
+   */
+  note?: string | undefined;
 };
 
 /**
@@ -428,6 +486,13 @@ export type QueueItemJson = {
    * @generated from field: optional string last_seen_at = 5;
    */
   lastSeenAt?: string;
+
+  /**
+   * the user's note
+   *
+   * @generated from field: optional string note = 6;
+   */
+  note?: string;
 };
 
 /**
@@ -435,7 +500,7 @@ export type QueueItemJson = {
  * Use `create(QueueItemSchema)` to create a new message.
  */
 export const QueueItemSchema: GenMessage<QueueItem, {jsonType: QueueItemJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 7);
+  messageDesc(file_treehub_v1_api, 8);
 
 /**
  * @generated from message treehub.v1.ListQueueResponse
@@ -466,9 +531,12 @@ export type ListQueueResponseJson = {
  * Use `create(ListQueueResponseSchema)` to create a new message.
  */
 export const ListQueueResponseSchema: GenMessage<ListQueueResponse, {jsonType: ListQueueResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 8);
+  messageDesc(file_treehub_v1_api, 9);
 
 /**
+ * Body of PUT /api/queue/{owner}/{name}/{number} (queues the pull request) and PATCH (only changes a queued one, else
+ * 404), optional. Without a title or a note, the item keeps its own; an empty one removes it.
+ *
  * @generated from message treehub.v1.PutQueueItemRequest
  */
 export type PutQueueItemRequest = Message<"treehub.v1.PutQueueItemRequest"> & {
@@ -476,9 +544,19 @@ export type PutQueueItemRequest = Message<"treehub.v1.PutQueueItemRequest"> & {
    * @generated from field: optional string title = 1;
    */
   title?: string | undefined;
+
+  /**
+   * at most 2000 characters
+   *
+   * @generated from field: optional string note = 2;
+   */
+  note?: string | undefined;
 };
 
 /**
+ * Body of PUT /api/queue/{owner}/{name}/{number} (queues the pull request) and PATCH (only changes a queued one, else
+ * 404), optional. Without a title or a note, the item keeps its own; an empty one removes it.
+ *
  * @generated from message treehub.v1.PutQueueItemRequest
  */
 export type PutQueueItemRequestJson = {
@@ -486,6 +564,13 @@ export type PutQueueItemRequestJson = {
    * @generated from field: optional string title = 1;
    */
   title?: string;
+
+  /**
+   * at most 2000 characters
+   *
+   * @generated from field: optional string note = 2;
+   */
+  note?: string;
 };
 
 /**
@@ -493,7 +578,135 @@ export type PutQueueItemRequestJson = {
  * Use `create(PutQueueItemRequestSchema)` to create a new message.
  */
 export const PutQueueItemRequestSchema: GenMessage<PutQueueItemRequest, {jsonType: PutQueueItemRequestJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 9);
+  messageDesc(file_treehub_v1_api, 10);
+
+/**
+ * A bookmark or queued pull request matching a search (GET /api/search?q=&limit=), best first: its repository, title
+ * and note contain every word searched, ranked with BM25. In the *_match fields, the matching words are between
+ * U+0002 and U+0003.
+ *
+ * @generated from message treehub.v1.SearchResult
+ */
+export type SearchResult = Message<"treehub.v1.SearchResult"> & {
+  /**
+   * "bookmark" or "queue"
+   *
+   * @generated from field: string kind = 1;
+   */
+  kind: string;
+
+  /**
+   * "owner/name"
+   *
+   * @generated from field: string repo = 2;
+   */
+  repo: string;
+
+  /**
+   * pull request number, 0 for a bookmark
+   *
+   * @generated from field: int32 number = 3;
+   */
+  number: number;
+
+  /**
+   * @generated from field: string repo_match = 4;
+   */
+  repoMatch: string;
+
+  /**
+   * @generated from field: optional string title_match = 5;
+   */
+  titleMatch?: string | undefined;
+
+  /**
+   * the part of the note around the matches, "…" where it is cut
+   *
+   * @generated from field: optional string note_match = 6;
+   */
+  noteMatch?: string | undefined;
+};
+
+/**
+ * A bookmark or queued pull request matching a search (GET /api/search?q=&limit=), best first: its repository, title
+ * and note contain every word searched, ranked with BM25. In the *_match fields, the matching words are between
+ * U+0002 and U+0003.
+ *
+ * @generated from message treehub.v1.SearchResult
+ */
+export type SearchResultJson = {
+  /**
+   * "bookmark" or "queue"
+   *
+   * @generated from field: string kind = 1;
+   */
+  kind?: string;
+
+  /**
+   * "owner/name"
+   *
+   * @generated from field: string repo = 2;
+   */
+  repo?: string;
+
+  /**
+   * pull request number, 0 for a bookmark
+   *
+   * @generated from field: int32 number = 3;
+   */
+  number?: number;
+
+  /**
+   * @generated from field: string repo_match = 4;
+   */
+  repoMatch?: string;
+
+  /**
+   * @generated from field: optional string title_match = 5;
+   */
+  titleMatch?: string;
+
+  /**
+   * the part of the note around the matches, "…" where it is cut
+   *
+   * @generated from field: optional string note_match = 6;
+   */
+  noteMatch?: string;
+};
+
+/**
+ * Describes the message treehub.v1.SearchResult.
+ * Use `create(SearchResultSchema)` to create a new message.
+ */
+export const SearchResultSchema: GenMessage<SearchResult, {jsonType: SearchResultJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 11);
+
+/**
+ * @generated from message treehub.v1.SearchResponse
+ */
+export type SearchResponse = Message<"treehub.v1.SearchResponse"> & {
+  /**
+   * @generated from field: repeated treehub.v1.SearchResult results = 1;
+   */
+  results: SearchResult[];
+};
+
+/**
+ * @generated from message treehub.v1.SearchResponse
+ */
+export type SearchResponseJson = {
+  /**
+   * @generated from field: repeated treehub.v1.SearchResult results = 1;
+   */
+  results?: SearchResultJson[];
+};
+
+/**
+ * Describes the message treehub.v1.SearchResponse.
+ * Use `create(SearchResponseSchema)` to create a new message.
+ */
+export const SearchResponseSchema: GenMessage<SearchResponse, {jsonType: SearchResponseJson}> = /*@__PURE__*/
+  messageDesc(file_treehub_v1_api, 12);
 
 /**
  * @generated from message treehub.v1.ErrorResponse
@@ -534,7 +747,7 @@ export type ErrorResponseJson = {
  * Use `create(ErrorResponseSchema)` to create a new message.
  */
 export const ErrorResponseSchema: GenMessage<ErrorResponse, {jsonType: ErrorResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 10);
+  messageDesc(file_treehub_v1_api, 13);
 
 /**
  * @generated from message treehub.v1.OkResponse
@@ -561,7 +774,7 @@ export type OkResponseJson = {
  * Use `create(OkResponseSchema)` to create a new message.
  */
 export const OkResponseSchema: GenMessage<OkResponse, {jsonType: OkResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 11);
+  messageDesc(file_treehub_v1_api, 14);
 
 /**
  * A repository or pull request the user viewed on GitHub, recorded by the extension while signed in. Kept for the
@@ -678,7 +891,7 @@ export type HistoryItemJson = {
  * Use `create(HistoryItemSchema)` to create a new message.
  */
 export const HistoryItemSchema: GenMessage<HistoryItem, {jsonType: HistoryItemJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 12);
+  messageDesc(file_treehub_v1_api, 15);
 
 /**
  * @generated from message treehub.v1.ListHistoryResponse
@@ -723,7 +936,7 @@ export type ListHistoryResponseJson = {
  * Use `create(ListHistoryResponseSchema)` to create a new message.
  */
 export const ListHistoryResponseSchema: GenMessage<ListHistoryResponse, {jsonType: ListHistoryResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 13);
+  messageDesc(file_treehub_v1_api, 16);
 
 /**
  * @generated from message treehub.v1.RecordViewRequest
@@ -750,7 +963,7 @@ export type RecordViewRequestJson = {
  * Use `create(RecordViewRequestSchema)` to create a new message.
  */
 export const RecordViewRequestSchema: GenMessage<RecordViewRequest, {jsonType: RecordViewRequestJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 14);
+  messageDesc(file_treehub_v1_api, 17);
 
 /**
  * @generated from message treehub.v1.RecordViewResponse
@@ -791,7 +1004,7 @@ export type RecordViewResponseJson = {
  * Use `create(RecordViewResponseSchema)` to create a new message.
  */
 export const RecordViewResponseSchema: GenMessage<RecordViewResponse, {jsonType: RecordViewResponseJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 15);
+  messageDesc(file_treehub_v1_api, 18);
 
 /**
  * @generated from message treehub.v1.HistorySettings
@@ -836,5 +1049,5 @@ export type HistorySettingsJson = {
  * Use `create(HistorySettingsSchema)` to create a new message.
  */
 export const HistorySettingsSchema: GenMessage<HistorySettings, {jsonType: HistorySettingsJson}> = /*@__PURE__*/
-  messageDesc(file_treehub_v1_api, 16);
+  messageDesc(file_treehub_v1_api, 19);
 

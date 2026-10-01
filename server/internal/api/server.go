@@ -62,7 +62,9 @@ func (c Config) maxHistoryItems() int64 {
 }
 
 type Server struct {
-	Q        *db.Queries
+	Q *db.Queries
+	// DB is the database of Q, for what sqlc doesn't generate (the search, see search.go)
+	DB       *sql.DB
 	Sessions *auth.Sessions
 	GitHub   *auth.GitHub
 	Cfg      Config
@@ -104,8 +106,11 @@ func (s *Server) Handler() http.Handler {
 
 	rt.handle("GET", "/api/queue", s.authed(jsonEndpoint(s.listQueue)))
 	rt.handle("PUT", "/api/queue/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.putQueueItem)))
+	rt.handle("PATCH", "/api/queue/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.patchQueueItem)))
 	rt.handle("DELETE", "/api/queue/{owner}/{name}/{number}", s.authed(jsonEndpoint(s.deleteQueueItem)))
 	rt.handle("POST", "/api/queue/{owner}/{name}/{number}/seen", s.authed(jsonEndpoint(s.markQueueItemSeen)))
+
+	rt.handle("GET", "/api/search", s.authed(jsonEndpoint(s.search)))
 
 	rt.handle("GET", "/api/history", s.authed(jsonEndpoint(s.listHistory)))
 	rt.handle("DELETE", "/api/history", s.authed(jsonEndpoint(s.clearHistory)))
@@ -127,7 +132,7 @@ func withCORS(next http.Handler) http.Handler {
 		h := w.Header()
 		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		h.Set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+		h.Set("Access-Control-Allow-Methods", "GET, PUT, PATCH, POST, DELETE, OPTIONS")
 		h.Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -243,12 +248,13 @@ func userProto(u *db.User) *treehubv1.User {
 }
 
 func bookmarkProto(b db.Bookmark) *treehubv1.Bookmark {
-	return &treehubv1.Bookmark{Repo: b.Repo, CreatedAt: b.CreatedAt}
+	return &treehubv1.Bookmark{Repo: b.Repo, CreatedAt: b.CreatedAt, Note: nonEmpty(b.Note)}
 }
 
 func queueItemProto(q db.QueueItem) *treehubv1.QueueItem {
 	return &treehubv1.QueueItem{
-		Repo: q.Repo, Number: int32(q.Number), Title: q.Title, AddedAt: q.AddedAt, LastSeenAt: q.LastSeenAt,
+		Repo: q.Repo, Number: int32(q.Number), Title: nonEmpty(q.Title), AddedAt: q.AddedAt, LastSeenAt: q.LastSeenAt,
+		Note: nonEmpty(q.Note),
 	}
 }
 

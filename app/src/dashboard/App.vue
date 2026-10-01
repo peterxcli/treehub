@@ -9,18 +9,39 @@ import CredentialProblemCard from './components/CredentialProblemCard.vue';
 import HistoryView from './components/HistoryView.vue';
 import Octicon from './components/Octicon.vue';
 import QueueView from './components/QueueView.vue';
+import SearchView from './components/SearchView.vue';
 import SignIn from './components/SignIn.vue';
 import Toasts from './components/Toasts.vue';
 import {init, loaded, problem, request, state} from './store.ts';
 
-type View = 'queue' | 'bookmarks' | 'history';
-const VIEW_TITLES: Record<View, string> = {queue: 'Review queue', bookmarks: 'Bookmarks', history: 'History'};
+type View = 'queue' | 'bookmarks' | 'history' | 'search';
+const VIEW_TITLES: Record<View, string> = {queue: 'Review queue', bookmarks: 'Bookmarks', history: 'History', search: 'Search'};
+// #queue, #bookmarks, #history, #search?q=…
 const readView = (): View => {
-  const hash = location.hash.slice(1);
-  return hash === 'bookmarks' || hash === 'history' ? hash : 'queue';
+  const hash = location.hash.slice(1).split('?')[0];
+  return hash === 'bookmarks' || hash === 'history' || hash === 'search' ? hash : 'queue';
 };
+const readQuery = () => new URLSearchParams(location.hash.split('?')[1] || '').get('q') || '';
 const view = ref<View>(readView());
-const onHashChange = () => (view.value = readView());
+const query = ref(readQuery());
+const onHashChange = () => {
+  view.value = readView();
+  query.value = readQuery();
+};
+/** Keeps the search in the address, for reloading and going back to it (without a history entry per letter). */
+function setQuery(text: string) {
+  query.value = text;
+  history.replaceState(null, '', text ? `#search?q=${encodeURIComponent(text)}` : '#search');
+}
+/** "/" searches, as on GitHub. */
+function onKeydown(event: KeyboardEvent) {
+  const target = event.target as HTMLElement;
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey || !account.value) return;
+  if (target.closest('input, textarea, select, [contenteditable]')) return;
+  event.preventDefault();
+  if (view.value === 'search') document.querySelector<HTMLInputElement>('.search-box input')?.focus();
+  else location.hash = 'search';
+}
 
 const account = computed(() => state.auth && state.auth.account);
 const queueCount = computed(() => (state.hub ? state.hub.queue.length : 0));
@@ -44,12 +65,14 @@ const onVisibilityChange = () => {
 
 onMounted(async () => {
   window.addEventListener('hashchange', onHashChange);
+  document.addEventListener('keydown', onKeydown);
   document.addEventListener('visibilitychange', onVisibilityChange);
   await init();
   refreshIfStale();
 });
 onBeforeUnmount(() => {
   window.removeEventListener('hashchange', onHashChange);
+  document.removeEventListener('keydown', onKeydown);
   document.removeEventListener('visibilitychange', onVisibilityChange);
 });
 
@@ -91,6 +114,10 @@ watch(
         <Octicon name="history" />
         History
       </a>
+      <a href="#search" :class="{selected: view === 'search'}" :aria-current="view === 'search' ? 'page' : undefined" title="Search (/)">
+        <Octicon name="search" />
+        Search
+      </a>
     </nav>
     <div class="spacer" />
     <AccountMenu v-if="account" :account="account" />
@@ -101,6 +128,7 @@ watch(
       <SignIn v-if="!account" />
       <BookmarksView v-else-if="view === 'bookmarks'" />
       <HistoryView v-else-if="view === 'history'" />
+      <SearchView v-else-if="view === 'search'" :query="query" @query="setQuery" />
       <QueueView v-else />
     </template>
   </main>

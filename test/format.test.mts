@@ -63,3 +63,26 @@ test('history is grouped by local day', async () => {
   assert.deepEqual(groups.map((g) => [g.label.replace(/.*September 20.*/, 'Sep 20'), g.items.length]),
     [['Today', 2], ['Yesterday', 1], ['Sep 20', 1]]);
 });
+
+test('marks the matches of a search result', async () => {
+  const {markMatches} = await import('../app/src/dashboard/format.ts');
+  assert.deepEqual(markMatches('Check the \u0002checksum\u0003 before \u0002merging\u0003'), [
+    {text: 'Check the ', match: false},
+    {text: 'checksum', match: true},
+    {text: ' before ', match: false},
+    {text: 'merging', match: true}
+  ]);
+  assert.deepEqual(markMatches('apache/\u0002checksum\u0003-tools'), [
+    {text: 'apache/', match: false},
+    {text: 'checksum', match: true},
+    {text: '-tools', match: false}
+  ]);
+  assert.deepEqual(markMatches('這個\u0002需\u0003\u0002要\u0003再看'), [
+    {text: '這個', match: false},
+    {text: '需', match: true},
+    {text: '要', match: true},
+    {text: '再看', match: false}
+  ]);
+  assert.deepEqual(markMatches('no match'), [{text: 'no match', match: false}]);
+  assert.deepEqual(markMatches(''), []);
+});

@@ -48,6 +48,7 @@ export interface Auth {
 export interface BookmarkEntry {
   repo: string; // "owner/name"
   createdAt: string;
+  note?: string; // the user's
 }
 
 export interface QueueEntry {
@@ -56,6 +57,7 @@ export interface QueueEntry {
   title?: string;
   addedAt: string;
   lastSeenAt?: string;
+  note?: string; // the user's
 }
 
 export interface Hub {

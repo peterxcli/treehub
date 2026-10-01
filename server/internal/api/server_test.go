@@ -11,7 +11,7 @@ import (
 var corsHeaders = map[string]string{
 	"Access-Control-Allow-Origin":  "*",
 	"Access-Control-Allow-Headers": "Authorization, Content-Type",
-	"Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
+	"Access-Control-Allow-Methods": "GET, PUT, PATCH, POST, DELETE, OPTIONS",
 	"Access-Control-Max-Age":       "86400",
 }
 

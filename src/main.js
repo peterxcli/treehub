@@ -335,10 +335,19 @@ $(document).ready(() => {
 
       let timerId = null;
 
+      // Writing in it, e.g. a note (view.hub.js): the mouse leaving doesn't close it then, a click outside does
+      const isTypingInSidebar = () => {
+        const focused = document.activeElement;
+        const field = 'textarea, input:not([type=checkbox], [type=radio])';
+        return !!focused && $sidebar[0].contains(focused) && $(focused).is(field);
+      };
       const startTimer = (delay) => {
         if (!isMouseInSidebar && !isSidebarPinned()) {
           clearTimer();
-          timerId = setTimeout(() => toggleSidebar(isSidebarPinned()), delay);
+          timerId = setTimeout(() => {
+            timerId = null;
+            if (!isTypingInSidebar()) toggleSidebar(isSidebarPinned());
+          }, delay);
         }
       };
       const clearTimer = () => {

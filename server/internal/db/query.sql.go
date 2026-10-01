@@ -110,35 +110,8 @@ func (q *Queries) DeleteUser(ctx context.Context, githubID int64) error {
 	return err
 }
 
-const ensureQueueItem = `-- name: EnsureQueueItem :one
-INSERT INTO queue_items (login, repo, number) VALUES (?, ?, ?)
-ON CONFLICT (login, repo, number) DO UPDATE SET repo = excluded.repo
-RETURNING login, repo, number, title, added_at, last_seen_at
-`
-
-type EnsureQueueItemParams struct {
-	Login  string
-	Repo   string
-	Number int64
-}
-
-// Used when the request has no title: a queued item keeps the one it has.
-func (q *Queries) EnsureQueueItem(ctx context.Context, arg EnsureQueueItemParams) (QueueItem, error) {
-	row := q.db.QueryRowContext(ctx, ensureQueueItem, arg.Login, arg.Repo, arg.Number)
-	var i QueueItem
-	err := row.Scan(
-		&i.Login,
-		&i.Repo,
-		&i.Number,
-		&i.Title,
-		&i.AddedAt,
-		&i.LastSeenAt,
-	)
-	return i, err
-}
-
 const getBookmark = `-- name: GetBookmark :one
-SELECT login, repo, created_at FROM bookmarks WHERE login = ? AND repo = ?
+SELECT login, repo, created_at, note, note_terms FROM bookmarks WHERE login = ? AND repo = ?
 `
 
 type GetBookmarkParams struct {
@@ -149,12 +122,18 @@ type GetBookmarkParams struct {
 func (q *Queries) GetBookmark(ctx context.Context, arg GetBookmarkParams) (Bookmark, error) {
 	row := q.db.QueryRowContext(ctx, getBookmark, arg.Login, arg.Repo)
 	var i Bookmark
-	err := row.Scan(&i.Login, &i.Repo, &i.CreatedAt)
+	err := row.Scan(
+		&i.Login,
+		&i.Repo,
+		&i.CreatedAt,
+		&i.Note,
+		&i.NoteTerms,
+	)
 	return i, err
 }
 
 const getQueueItem = `-- name: GetQueueItem :one
-SELECT login, repo, number, title, added_at, last_seen_at FROM queue_items WHERE login = ? AND repo = ? AND number = ?
+SELECT login, repo, number, title, added_at, last_seen_at, note, note_terms, title_terms FROM queue_items WHERE login = ? AND repo = ? AND number = ?
 `
 
 type GetQueueItemParams struct {
@@ -173,6 +152,9 @@ func (q *Queries) GetQueueItem(ctx context.Context, arg GetQueueItemParams) (Que
 		&i.Title,
 		&i.AddedAt,
 		&i.LastSeenAt,
+		&i.Note,
+		&i.NoteTerms,
+		&i.TitleTerms,
 	)
 	return i, err
 }
@@ -242,7 +224,7 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
 
 const listBookmarks = `-- name: ListBookmarks :many
 
-SELECT login, repo, created_at FROM bookmarks WHERE login = ? ORDER BY created_at DESC, rowid DESC
+SELECT login, repo, created_at, note, note_terms FROM bookmarks WHERE login = ? ORDER BY created_at DESC, rowid DESC
 `
 
 // ---------- bookmarks ----------
@@ -256,7 +238,13 @@ func (q *Queries) ListBookmarks(ctx context.Context, login string) ([]Bookmark, 
 	items := []Bookmark{}
 	for rows.Next() {
 		var i Bookmark
-		if err := rows.Scan(&i.Login, &i.Repo, &i.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&i.Login,
+			&i.Repo,
+			&i.CreatedAt,
+			&i.Note,
+			&i.NoteTerms,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -391,7 +379,7 @@ func (q *Queries) ListHistoryAfter(ctx context.Context, arg ListHistoryAfterPara
 
 const listQueueItems = `-- name: ListQueueItems :many
 
-SELECT login, repo, number, title, added_at, last_seen_at FROM queue_items WHERE login = ? ORDER BY added_at DESC, rowid DESC
+SELECT login, repo, number, title, added_at, last_seen_at, note, note_terms, title_terms FROM queue_items WHERE login = ? ORDER BY added_at DESC, rowid DESC
 `
 
 // ---------- review queue ----------
@@ -411,6 +399,9 @@ func (q *Queries) ListQueueItems(ctx context.Context, login string) ([]QueueItem
 			&i.Title,
 			&i.AddedAt,
 			&i.LastSeenAt,
+			&i.Note,
+			&i.NoteTerms,
+			&i.TitleTerms,
 		); err != nil {
 			return nil, err
 		}
@@ -429,7 +420,7 @@ const markQueueItemSeen = `-- name: MarkQueueItemSeen :one
 UPDATE queue_items
 SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
 WHERE login = ? AND repo = ? AND number = ?
-RETURNING login, repo, number, title, added_at, last_seen_at
+RETURNING login, repo, number, title, added_at, last_seen_at, note, note_terms, title_terms
 `
 
 type MarkQueueItemSeenParams struct {
@@ -448,6 +439,9 @@ func (q *Queries) MarkQueueItemSeen(ctx context.Context, arg MarkQueueItemSeenPa
 		&i.Title,
 		&i.AddedAt,
 		&i.LastSeenAt,
+		&i.Note,
+		&i.NoteTerms,
+		&i.TitleTerms,
 	)
 	return i, err
 }
@@ -654,45 +648,36 @@ func (q *Queries) TrimHistory(ctx context.Context, arg TrimHistoryParams) error 
 	return err
 }
 
-const upsertBookmark = `-- name: UpsertBookmark :one
-INSERT INTO bookmarks (login, repo) VALUES (?, ?)
-ON CONFLICT (login, repo) DO UPDATE SET repo = excluded.repo
-RETURNING login, repo, created_at
+const updateQueueItem = `-- name: UpdateQueueItem :one
+UPDATE queue_items SET
+  title = COALESCE(?1, title),
+  title_terms = COALESCE(?2, title_terms),
+  note = COALESCE(?3, note),
+  note_terms = COALESCE(?4, note_terms)
+WHERE login = ?5 AND repo = ?6 AND number = ?7
+RETURNING login, repo, number, title, added_at, last_seen_at, note, note_terms, title_terms
 `
 
-type UpsertBookmarkParams struct {
-	Login string
-	Repo  string
+type UpdateQueueItemParams struct {
+	Title      *string
+	TitleTerms *string
+	Note       *string
+	NoteTerms  *string
+	Login      string
+	Repo       string
+	Number     int64
 }
 
-// An existing row keeps its created_at; only the spelling of the repo follows the request.
-func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) (Bookmark, error) {
-	row := q.db.QueryRowContext(ctx, upsertBookmark, arg.Login, arg.Repo)
-	var i Bookmark
-	err := row.Scan(&i.Login, &i.Repo, &i.CreatedAt)
-	return i, err
-}
-
-const upsertQueueItem = `-- name: UpsertQueueItem :one
-INSERT INTO queue_items (login, repo, number, title) VALUES (?, ?, ?, ?)
-ON CONFLICT (login, repo, number) DO UPDATE SET repo = excluded.repo, title = excluded.title
-RETURNING login, repo, number, title, added_at, last_seen_at
-`
-
-type UpsertQueueItemParams struct {
-	Login  string
-	Repo   string
-	Number int64
-	Title  *string
-}
-
-// Used when the request carries a title.
-func (q *Queries) UpsertQueueItem(ctx context.Context, arg UpsertQueueItemParams) (QueueItem, error) {
-	row := q.db.QueryRowContext(ctx, upsertQueueItem,
+// Like UpsertQueueItem for an item that must be queued already: it never adds back one removed meanwhile.
+func (q *Queries) UpdateQueueItem(ctx context.Context, arg UpdateQueueItemParams) (QueueItem, error) {
+	row := q.db.QueryRowContext(ctx, updateQueueItem,
+		arg.Title,
+		arg.TitleTerms,
+		arg.Note,
+		arg.NoteTerms,
 		arg.Login,
 		arg.Repo,
 		arg.Number,
-		arg.Title,
 	)
 	var i QueueItem
 	err := row.Scan(
@@ -702,6 +687,94 @@ func (q *Queries) UpsertQueueItem(ctx context.Context, arg UpsertQueueItemParams
 		&i.Title,
 		&i.AddedAt,
 		&i.LastSeenAt,
+		&i.Note,
+		&i.NoteTerms,
+		&i.TitleTerms,
+	)
+	return i, err
+}
+
+const upsertBookmark = `-- name: UpsertBookmark :one
+INSERT INTO bookmarks (login, repo, note, note_terms) VALUES (?, ?, ?, ?)
+ON CONFLICT (login, repo) DO UPDATE SET
+  repo = excluded.repo,
+  note = COALESCE(excluded.note, bookmarks.note),
+  note_terms = COALESCE(excluded.note_terms, bookmarks.note_terms)
+RETURNING login, repo, created_at, note, note_terms
+`
+
+type UpsertBookmarkParams struct {
+	Login     string
+	Repo      string
+	Note      *string
+	NoteTerms *string
+}
+
+// An existing row keeps its created_at; the spelling of the repo follows the request. A NULL note keeps the row's
+// note, ” clears it (and reads as no note). note_terms is the note as the search indexes it (see
+// migrations/0003_notes.sql).
+func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) (Bookmark, error) {
+	row := q.db.QueryRowContext(ctx, upsertBookmark,
+		arg.Login,
+		arg.Repo,
+		arg.Note,
+		arg.NoteTerms,
+	)
+	var i Bookmark
+	err := row.Scan(
+		&i.Login,
+		&i.Repo,
+		&i.CreatedAt,
+		&i.Note,
+		&i.NoteTerms,
+	)
+	return i, err
+}
+
+const upsertQueueItem = `-- name: UpsertQueueItem :one
+INSERT INTO queue_items (login, repo, number, title, title_terms, note, note_terms) VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (login, repo, number) DO UPDATE SET
+  repo = excluded.repo,
+  title = COALESCE(excluded.title, queue_items.title),
+  title_terms = COALESCE(excluded.title_terms, queue_items.title_terms),
+  note = COALESCE(excluded.note, queue_items.note),
+  note_terms = COALESCE(excluded.note_terms, queue_items.note_terms)
+RETURNING login, repo, number, title, added_at, last_seen_at, note, note_terms, title_terms
+`
+
+type UpsertQueueItemParams struct {
+	Login      string
+	Repo       string
+	Number     int64
+	Title      *string
+	TitleTerms *string
+	Note       *string
+	NoteTerms  *string
+}
+
+// A NULL title or note keeps the row's (a bare PUT never erases them); a note of ” clears it (and reads as no
+// note). *_terms are the texts as the search indexes them (see migrations/0003_notes.sql).
+func (q *Queries) UpsertQueueItem(ctx context.Context, arg UpsertQueueItemParams) (QueueItem, error) {
+	row := q.db.QueryRowContext(ctx, upsertQueueItem,
+		arg.Login,
+		arg.Repo,
+		arg.Number,
+		arg.Title,
+		arg.TitleTerms,
+		arg.Note,
+		arg.NoteTerms,
+	)
+	var i QueueItem
+	err := row.Scan(
+		&i.Login,
+		&i.Repo,
+		&i.Number,
+		&i.Title,
+		&i.AddedAt,
+		&i.LastSeenAt,
+		&i.Note,
+		&i.NoteTerms,
+		&i.TitleTerms,
 	)
 	return i, err
 }

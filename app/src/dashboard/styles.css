@@ -403,6 +403,11 @@ main {
   color: var(--accent);
 }
 
+.icon-button.selected {
+  background: var(--neutral-muted);
+  color: var(--fg);
+}
+
 .add-form {
   display: flex;
   align-items: center;
@@ -878,6 +883,117 @@ a.chip:hover {
   box-shadow: var(--shadow);
 }
 
+/* ---------- Notes ---------- */
+
+.add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-note,
+.note-form textarea {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  resize: vertical;
+}
+
+.add-note:focus,
+.note-form textarea:focus {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+
+.note {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 0 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  background: var(--neutral-muted);
+}
+
+.note-icon {
+  margin-top: 3px;
+  color: var(--fg-muted);
+}
+
+.note-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.note-text.clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.note-more {
+  grid-column: 2;
+  justify-self: start;
+  font-size: 12px;
+}
+
+.note-form {
+  margin-top: 8px;
+}
+
+.card .note,
+.card .note-form {
+  margin-top: 0;
+}
+
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.note-actions .muted {
+  flex: 1;
+  font-size: 12px;
+}
+
+/* ---------- Search ---------- */
+
+.search-box {
+  cursor: text;
+}
+
+.search-box input {
+  padding: 6px 0;
+  font-size: 16px;
+}
+
+.search-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pr-state.bookmarked {
+  color: var(--accent);
+}
+
+mark {
+  border-radius: 2px;
+  background: var(--attention-muted);
+  box-shadow: 0 0 0 1px var(--attention-border);
+  color: inherit;
+}
+
 /* ---------- Bookmarks ---------- */
 
 .search {
@@ -943,7 +1059,9 @@ a.chip:hover {
   font-weight: 400;
 }
 
-.card header .icon-button {
+.card-actions {
+  display: flex;
+  gap: 2px;
   margin: -6px -6px -6px 0;
 }
 

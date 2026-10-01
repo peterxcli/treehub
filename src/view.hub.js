@@ -14,7 +14,8 @@ const HUB_FLASH_MS = 6000;
  * them from chrome.storage, which the worker keeps current, and asks the worker to change them. It also tells the
  * worker when a queued pull request is looked at, which settles its replies, mentions and updates, and which
  * repositories and pull requests the user opens, for their history. When the user was signed out without asking
- * (e.g. the session expired), a notice in the sidebar says so.
+ * (e.g. the session expired), a notice in the sidebar says so. Bookmarking a repository or queueing a pull request
+ * offers to add a note to it.
  */
 class HubView {
   constructor($dom) {
@@ -29,6 +30,9 @@ class HubView {
     this.$account = $dom.find('.treehub-account');
     this.$flash = $dom.find('.treehub-hub-flash');
     this.$signinNotice = $dom.find('.treehub-signin-notice');
+    this.$notePrompt = $dom.find('.treehub-note-prompt');
+    this.$noteText = this.$notePrompt.find('textarea');
+    this._noteTarget = null;
 
     this.$bookmark.click((event) => {
       event.preventDefault();
@@ -47,12 +51,35 @@ class HubView {
       .on('click', '.treehub-open-dashboard', () => this._openDashboard())
       .on('click', '.treehub-sign-out', () => this._signOut());
     this.$flash.click(() => this.$flash.removeClass('visible'));
+    this.$notePrompt
+      .on('submit', (event) => {
+        event.preventDefault();
+        this._saveNote();
+      })
+      .on('click', '.treehub-note-prompt-skip', () => this._closeNotePrompt())
+      .on('keydown', 'textarea', (event) => {
+        // Not GitHub's keyboard shortcuts
+        event.stopPropagation();
+        if (event.key === 'Escape') this._closeNotePrompt();
+        else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) this._saveNote();
+      })
+      // Leaving it without writing anything
+      .on('focusout', () => {
+        setTimeout(() => {
+          const inside = this.$notePrompt[0].contains(document.activeElement);
+          if (!inside && !this.$noteText.val().trim()) this._closeNotePrompt();
+        });
+      });
     this.$signinNotice
       .on('click', '.treehub-signin-notice-signin', (event) => this._signInAgain($(event.currentTarget)))
       .on('click', '.treehub-signin-notice-dismiss', () => {
         this._send({type: 'treehub:dismissSigninProblem'}).catch(() => {});
       });
 
+    // The sidebar closing with nothing written skips the note
+    $(document).on(EVENT.TOGGLE, (event, visible) => {
+      if (!visible && this._noteTarget && !this.$noteText.val().trim()) this._closeNotePrompt();
+    });
     $(extStore).on(EVENT.STORE_CHANGE, (event, changes) => {
       if (changes[HUB_STORE.AUTH] || changes[HUB_STORE.HUB] || changes[HUB_STORE.SIGNIN_PROBLEM]) this._load();
     });
@@ -193,12 +220,51 @@ class HubView {
           seen: on && document.visibilityState === 'visible'
         });
       }
+      if (on) this._openNotePrompt(kind === 'bookmark' ? {repo: target} : target);
+      else if (this._noteTarget && this._sameTarget(this._noteTarget, kind === 'bookmark' ? {repo: target} : target)) {
+        this._closeNotePrompt();
+      }
     } catch (err) {
       this._fail(err);
     } finally {
       this._pending[kind] = false;
       $toggle.removeClass('pending');
     }
+  }
+
+  /** Offers to add a note to what was just bookmarked ({repo}) or queued ({repo, number}). */
+  _openNotePrompt(target) {
+    this._noteTarget = target;
+    this.$notePrompt
+      .find('.treehub-note-prompt-title')
+      .text(target.number ? `Added #${target.number} to your review queue` : `Bookmarked ${target.repo}`);
+    this.$noteText.val('').prop('disabled', false);
+    this.$notePrompt.prop('hidden', false).find('button').prop('disabled', false);
+    this.$noteText.focus();
+  }
+
+  _closeNotePrompt() {
+    this._noteTarget = null;
+    this.$notePrompt.prop('hidden', true);
+  }
+
+  async _saveNote() {
+    const target = this._noteTarget;
+    const note = this.$noteText.val().trim();
+    if (!target) return;
+    if (!note) return this._closeNotePrompt();
+    this.$notePrompt.find('button').prop('disabled', true);
+    try {
+      await this._send(Object.assign({type: 'treehub:setNote', note}, target));
+      if (this._noteTarget === target) this._closeNotePrompt();
+    } catch (err) {
+      this.$notePrompt.find('button').prop('disabled', false);
+      this._fail(err);
+    }
+  }
+
+  _sameTarget(a, b) {
+    return a.number ? this._samePull(a, b) : !b.number && a.repo.toLowerCase() === b.repo.toLowerCase();
   }
 
   /** Title of the pull request of this page, cached by the backend for display. */

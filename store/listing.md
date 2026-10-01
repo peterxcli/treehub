@@ -53,16 +53,20 @@ BOOKMARKS
 • One click bookmarks the current repository; the icon turns bold once bookmarked
 • Your bookmarks with their description, language, stars, open pull requests and issues
 
+NOTES AND SEARCH
+• Add a note when you queue a pull request or bookmark a repository (or later, from the dashboard): why you follow it, what to check
+• Search your notes, pull request titles and repository names from the dashboard: best matches first, matching words highlighted, other forms of words found too
+
 HISTORY
 • The repositories and pull requests you open on GitHub, most recent first and grouped by day, so you can find them again
 • Kept 30 days after your last visit by default (from 1 to 365 days); pause the recording, remove entries or clear it anytime
 
 DASHBOARD
-• The extension's own page lists your review queue, with filters by status and sorting, your bookmarks and your history
+• The extension's own page lists your review queue, with filters by status and sorting, your bookmarks and your history, and searches your notes
 • Sign in with GitHub: your bookmarks, queue and history follow you across browsers
 
 PRIVACY
-The code tree and review tools work on public repositories without any setup or account, and talk only to GitHub. Bookmarks and the review queue need you to sign in with GitHub: the TreeHub server then keeps your GitHub handle, your bookmarks and your queued pull requests. Your GitHub token stays in your browser, statuses are computed there, and you can delete your account from the dashboard. Details: https://github.com/peterxcli/treehub/blob/main/PRIVACY.md
+The code tree and review tools work on public repositories without any setup or account, and talk only to GitHub. Bookmarks and the review queue need you to sign in with GitHub: the TreeHub server then keeps your GitHub handle, your bookmarks and your queued pull requests, with your notes on them. Your GitHub token stays in your browser, statuses are computed there, and you can delete your account from the dashboard. Details: https://github.com/peterxcli/treehub/blob/main/PRIVACY.md
 
 TreeHub is open source under the AGPL-3.0: https://github.com/peterxcli/treehub
 Based on the open-source edition of Octotree. Not affiliated with or endorsed by Octotree or GitHub.
@@ -96,7 +100,7 @@ TreeHub helps developers navigate and review code on GitHub: a code tree and pul
 - `storage`:
 
   ```text
-  Saves the user's settings (sidebar width, docking side, pinning, hotkeys, pull request filter), the optional GitHub access token, the sign-in session, and a local copy of the user's bookmarks and review queue with the computed statuses, so that GitHub pages and the dashboard show them without waiting.
+  Saves the user's settings (sidebar width, docking side, pinning, hotkeys, pull request filter), the optional GitHub access token, the sign-in session, and a local copy of the user's bookmarks and review queue (with the user's notes) and the computed statuses, so that GitHub pages and the dashboard show them without waiting.
   ```
 
 - `identity`:
@@ -124,7 +128,7 @@ TreeHub helps developers navigate and review code on GitHub: a code tree and pul
 - **Personally identifiable information**: when the user signs in, the TreeHub server stores their GitHub handle, user ID, name and avatar URL from their GitHub profile.
 - **Authentication information**: the GitHub token (from signing in, or a personal access token) stored locally and sent only to GitHub's API; when GitHub makes the token from signing in expire, its refresh token, stored locally and sent to the TreeHub server only to renew the token (passed on to GitHub, not stored); the TreeHub session token stored locally and sent only to the TreeHub server.
 - **Web history**: while the user is signed in, the GitHub repositories and pull requests they open (repository name, pull request number and title, first and last visit, number of visits), stored by the TreeHub server for the user's history; deleted a set number of days after the last visit (30 by default, 1 to 365), pausable and clearable in the dashboard. Also, for pull requests in the review queue, the time the user last opened them.
-- **Website content**: the names of bookmarked repositories and the repository, number and title of queued pull requests, stored by the TreeHub server; review comments the user writes are sent to GitHub when the user previews or adds them. Other page content is only read locally.
+- **Website content**: the names of bookmarked repositories and the repository, number and title of queued pull requests, with the notes the user writes on them, stored by the TreeHub server (with a search index of them, for searching them in the dashboard); review comments the user writes are sent to GitHub when the user previews or adds them. Other page content is only read locally.
 
 Then check all three certifications (not sold to third parties, not used for unrelated purposes, not used for creditworthiness).
 
@@ -148,5 +152,6 @@ Steps 1-5 need no account or setup.
 Bookmarks and the review queue need a GitHub account (any account works):
 6. Click the TreeHub toolbar icon to open the dashboard and click "Sign in with GitHub".
 7. Back on the pull request, click the review icon in the sidebar header (second row) to add it to the review queue, and the bookmark icon to bookmark the repository. Both turn bold.
-8. The dashboard lists the queued pull request with its statuses, and the bookmark. The account menu has "Delete account".
+8. After each click, a box in the sidebar offers to add a note: type one and click "Save note" (or "Skip").
+9. The dashboard lists the queued pull request with its statuses, and the bookmark, with their notes. The Search tab finds them by a word of a note. The account menu has "Delete account".
 ```

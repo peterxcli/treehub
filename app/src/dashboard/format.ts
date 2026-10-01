@@ -97,3 +97,24 @@ export function groupByDay<T>(items: T[], timeOf: (item: T) => string, now = Dat
   }
   return groups;
 }
+
+/**
+ * A search result's text in parts, the matching words marked: the server puts them between U+0002 and U+0003
+ * (see api.search).
+ */
+export function markMatches(text: string): Array<{text: string; match: boolean}> {
+  const parts: Array<{text: string; match: boolean}> = [];
+  let current = '';
+  let match = false;
+  for (const char of text) {
+    if (char === '\u0002' || char === '\u0003') {
+      if (current) parts.push({text: current, match});
+      current = '';
+      match = char === '\u0002';
+    } else {
+      current += char;
+    }
+  }
+  if (current) parts.push({text: current, match});
+  return parts;
+}

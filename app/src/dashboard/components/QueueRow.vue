@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import {computed} from 'vue';
+import {computed, ref} from 'vue';
 import {needsAttention, type PRState} from '../../lib/status.ts';
 import type {QueueEntry} from '../../lib/storage.ts';
 import {fullTime, timeAgo} from '../format.ts';
 import type {OcticonName} from '../icons.ts';
 import {clock} from '../store.ts';
+import NoteEditor from './NoteEditor.vue';
 import Octicon from './Octicon.vue';
 import StatusChip from './StatusChip.vue';
 
 const props = defineProps<{entry: QueueEntry; state?: PRState; busy?: boolean}>();
-const emit = defineEmits<{remove: []; seen: []}>();
+const emit = defineEmits<{remove: []; seen: []; note: [note: string]}>();
+const editingNote = ref(false);
 
 const url = computed(() => (props.state && props.state.url) || `https://github.com/${props.entry.repo}/pull/${props.entry.number}`);
 const title = computed(() => (props.state && props.state.title) || props.entry.title || `Pull request #${props.entry.number}`);
@@ -57,8 +59,19 @@ const stateIcon = computed<{icon: OcticonName; label: string; className: string}
         <StatusChip v-for="status in state.statuses" :key="status.key" :status="status" />
       </div>
       <p v-if="state && state.error" class="pr-error">{{ state.error }}</p>
+      <NoteEditor v-model:editing="editingNote" :note="entry.note" :busy="busy" @save="emit('note', $event)" />
     </div>
     <div class="pr-actions">
+      <button
+        type="button"
+        class="icon-button"
+        :class="{selected: editingNote}"
+        :title="entry.note ? 'Edit the note' : 'Add a note'"
+        :aria-label="entry.note ? 'Edit the note' : 'Add a note'"
+        @click="editingNote = !editingNote"
+      >
+        <Octicon name="note" />
+      </button>
       <button type="button" class="icon-button" title="Mark as seen" aria-label="Mark as seen" @click="emit('seen')">
         <Octicon name="eye" />
       </button>

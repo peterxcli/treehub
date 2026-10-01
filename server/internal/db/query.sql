@@ -50,10 +50,15 @@ SELECT * FROM bookmarks WHERE login = ? AND repo = ?;
 -- name: CountBookmarks :one
 SELECT COUNT(*) FROM bookmarks WHERE login = ?;
 
--- An existing row keeps its created_at; only the spelling of the repo follows the request.
+-- An existing row keeps its created_at; the spelling of the repo follows the request. A NULL note keeps the row's
+-- note, '' clears it (and reads as no note). note_terms is the note as the search indexes it (see
+-- migrations/0003_notes.sql).
 -- name: UpsertBookmark :one
-INSERT INTO bookmarks (login, repo) VALUES (?, ?)
-ON CONFLICT (login, repo) DO UPDATE SET repo = excluded.repo
+INSERT INTO bookmarks (login, repo, note, note_terms) VALUES (?, ?, ?, ?)
+ON CONFLICT (login, repo) DO UPDATE SET
+  repo = excluded.repo,
+  note = COALESCE(excluded.note, bookmarks.note),
+  note_terms = COALESCE(excluded.note_terms, bookmarks.note_terms)
 RETURNING *;
 
 -- name: DeleteBookmark :exec
@@ -70,16 +75,26 @@ SELECT * FROM queue_items WHERE login = ? AND repo = ? AND number = ?;
 -- name: CountQueueItems :one
 SELECT COUNT(*) FROM queue_items WHERE login = ?;
 
--- Used when the request carries a title.
+-- A NULL title or note keeps the row's (a bare PUT never erases them); a note of '' clears it (and reads as no
+-- note). *_terms are the texts as the search indexes them (see migrations/0003_notes.sql).
 -- name: UpsertQueueItem :one
-INSERT INTO queue_items (login, repo, number, title) VALUES (?, ?, ?, ?)
-ON CONFLICT (login, repo, number) DO UPDATE SET repo = excluded.repo, title = excluded.title
+INSERT INTO queue_items (login, repo, number, title, title_terms, note, note_terms) VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (login, repo, number) DO UPDATE SET
+  repo = excluded.repo,
+  title = COALESCE(excluded.title, queue_items.title),
+  title_terms = COALESCE(excluded.title_terms, queue_items.title_terms),
+  note = COALESCE(excluded.note, queue_items.note),
+  note_terms = COALESCE(excluded.note_terms, queue_items.note_terms)
 RETURNING *;
 
--- Used when the request has no title: a queued item keeps the one it has.
--- name: EnsureQueueItem :one
-INSERT INTO queue_items (login, repo, number) VALUES (?, ?, ?)
-ON CONFLICT (login, repo, number) DO UPDATE SET repo = excluded.repo
+-- Like UpsertQueueItem for an item that must be queued already: it never adds back one removed meanwhile.
+-- name: UpdateQueueItem :one
+UPDATE queue_items SET
+  title = COALESCE(sqlc.narg(title), title),
+  title_terms = COALESCE(sqlc.narg(title_terms), title_terms),
+  note = COALESCE(sqlc.narg(note), note),
+  note_terms = COALESCE(sqlc.narg(note_terms), note_terms)
+WHERE login = sqlc.arg(login) AND repo = sqlc.arg(repo) AND number = sqlc.arg(number)
 RETURNING *;
 
 -- name: MarkQueueItemSeen :one

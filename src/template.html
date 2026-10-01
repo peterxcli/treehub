@@ -47,6 +47,22 @@
 
     <div class="treehub-hub-flash" role="status" aria-live="polite"></div>
 
+    <!-- After bookmarking or queueing (view.hub.js) -->
+    <form class="treehub-note-prompt" aria-labelledby="treehub-note-prompt-title" hidden>
+      <label id="treehub-note-prompt-title" class="treehub-note-prompt-title" for="treehub-note-prompt-text"></label>
+      <textarea
+        id="treehub-note-prompt-text"
+        class="form-control"
+        rows="3"
+        maxlength="2000"
+        placeholder="Add a note: why you follow it, what to check… You can search notes in the dashboard."
+      ></textarea>
+      <div class="treehub-note-prompt-actions">
+        <button type="submit" class="btn btn-sm btn-primary">Save note</button>
+        <button type="button" class="btn btn-sm treehub-note-prompt-skip">Skip</button>
+      </div>
+    </form>
+
     <div class="treehub-signin-notice" role="alert" hidden>
       <strong class="treehub-signin-notice-title"></strong>
       <p class="treehub-signin-notice-text"></p>

@@ -44,8 +44,10 @@ func newHandler() (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	sqlDB := sql.OpenDB(connector)
 	srv := &api.Server{
-		Q:        db.New(sql.OpenDB(connector)),
+		Q:        db.New(sqlDB),
+		DB:       sqlDB,
 		Sessions: sessions,
 		GitHub: &auth.GitHub{
 			ClientID:     cloudflare.Getenv("GITHUB_CLIENT_ID"),

@@ -8,6 +8,8 @@ type Bookmark struct {
 	Login     string
 	Repo      string
 	CreatedAt string
+	Note      *string
+	NoteTerms *string
 }
 
 type History struct {
@@ -28,6 +30,23 @@ type QueueItem struct {
 	Title      *string
 	AddedAt    string
 	LastSeenAt *string
+	Note       *string
+	NoteTerms  *string
+	TitleTerms *string
+}
+
+type SearchIndex struct {
+	Repo  string
+	Title string
+	Note  string
+}
+
+type SearchKey struct {
+	ID     int64
+	Kind   string
+	Login  string
+	Repo   string
+	Number int64
 }
 
 type User struct {
