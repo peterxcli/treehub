@@ -8,6 +8,10 @@ const GH_CACHE_TTL = 5 * 60 * 1000;
 // Diff containers in the "Files changed" page (classic and React versions) have id="diff-<sha256(path)>"
 const GH_DIFF_ID = /^diff-[0-9a-f]{64}$/;
 const GH_PR_FILES_PATH = /^\/([^\/]+)\/([^\/]+)\/pull\/(\d+)\/(files|changes)\/?$/;
+// The "Viewed" toggle of a diff in the React UI. Its CSS-module class names change (MarkAsViewedButton-module__...
+// once, hashed like iconOnly__kjZ2po now), so it's found by its aria-pressed attribute and its text.
+const GH_VIEWED_BUTTON = 'button[aria-pressed]';
+const isViewedButton = (el) => el.matches(GH_VIEWED_BUTTON) && el.textContent.trim() === 'Viewed';
 
 const GH_REVIEW_THREADS_QUERY = `
   query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
@@ -284,13 +288,13 @@ class GitHub extends Adapter {
    */
   insertDiffHeaderAction(diffEl, el) {
     // New UI: next to the "Viewed" button
-    const viewedButton = diffEl.querySelector('button[class*="MarkAsViewedButton"]');
+    const viewedButton = this._findViewedButton(diffEl);
     if (viewedButton) {
       viewedButton.parentElement.insertBefore(el, viewedButton);
       return true;
     }
 
-    const header = diffEl.querySelector('[class*="DiffFileHeader-module__diff-file-header"]');
+    const header = diffEl.querySelector('[class*="diff-file-header"]');
     const actions = header && header.querySelector('.flex-justify-end');
     if (actions) {
       const first = actions.firstElementChild;
@@ -884,13 +888,17 @@ class GitHub extends Adapter {
    * @return {?boolean} whether the diff is marked as viewed, null if unknown.
    */
   _getViewedStateOfDiff(diffEl) {
-    const button = diffEl.querySelector('button[class*="MarkAsViewedButton"]');
+    const button = this._findViewedButton(diffEl);
     if (button) return button.getAttribute('aria-pressed') === 'true';
 
     const checkbox = diffEl.querySelector('input.js-reviewed-checkbox');
     if (checkbox) return checkbox.checked;
 
     return null;
+  }
+
+  _findViewedButton(diffEl) {
+    return Array.from(diffEl.querySelectorAll(GH_VIEWED_BUTTON)).find(isViewedButton) || null;
   }
 
   _getPathOfDiff(diffEl) {
@@ -914,7 +922,7 @@ class GitHub extends Adapter {
     // New UI: aria-pressed of the "Viewed" button
     new window.MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.target.matches && mutation.target.matches('button[class*="MarkAsViewedButton"]')) {
+        if (mutation.target.matches && isViewedButton(mutation.target)) {
           notify(mutation.target);
         }
       });
