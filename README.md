@@ -20,7 +20,7 @@ Only the files a pull request (or commit) changes, with additions and deletions 
 
 ### View full file
 
-A "View full" button on each pull request diff shows the entire file with its changes, syntax highlighting and conversations. Click line numbers to select lines (Shift+click or drag for a range), then comment on them or copy their permalink.
+A "View full" button on each pull request diff shows the entire file with its changes, syntax highlighting and conversations. Click line numbers to select lines (Shift+click or drag for a range), then comment on them or copy their permalink. In long files, a minimap beside the file marks where the changes and conversations are: click or drag it to scroll there.
 
 <img src="docs/screenshots/view-full.png" width="1232" alt="The View full dialog: the entire file with its changes, two lines selected with Comment and Copy permalink">
 

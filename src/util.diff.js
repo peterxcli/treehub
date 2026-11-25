@@ -154,6 +154,27 @@ function describeRowRange(rows, from, to) {
 }
 
 /**
+ * Groups the changed rows of mergeFileWithPatch() or patchToRows() into runs of consecutive rows of one type, the
+ * marks of the minimap of the file.
+ * @return {!Array<{type: string, from: number, to: number}>} type is 'add' or 'del', from..to (inclusive) are
+ *   indexes of rows
+ */
+function changeRuns(rows) {
+  const runs = [];
+  let run = null;
+  rows.forEach((row, index) => {
+    if (row.type !== 'add' && row.type !== 'del') {
+      run = null;
+    } else if (run && run.type === row.type) {
+      run.to = index;
+    } else {
+      runs.push((run = {type: row.type, from: index, to: index}));
+    }
+  });
+  return runs;
+}
+
+/**
  * Splits text into lines, dropping the empty line produced by a trailing newline.
  * @param {string} text
  */

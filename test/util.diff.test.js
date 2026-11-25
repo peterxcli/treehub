@@ -13,7 +13,7 @@ function load(...files) {
   return context;
 }
 
-const {parsePatch, mergeFileWithPatch, patchToRows, describeRowRange, splitLines, splitHtmlLines} =
+const {parsePatch, mergeFileWithPatch, patchToRows, describeRowRange, changeRuns, splitLines, splitHtmlLines} =
   load('src/util.diff.js');
 const {timeAgo, sha256Hex, splitName, pastHalfLife} = load('src/util.misc.js');
 
@@ -136,6 +136,16 @@ test('describeRowRange: lines outside the diff or across hunks cannot take a lin
   assert.deepEqual(range.newRange, {start: 1, end: 9});
   assert.deepEqual(local(describeRowRange(patchRows, 0, 2)).comment,
     {line: 1, side: 'RIGHT', startLine: 1, startSide: 'LEFT'});
+});
+
+test('changeRuns groups consecutive added or deleted rows, the marks of the minimap', () => {
+  const patch = '@@ -2,5 +2,4 @@\n 2\n-3\n-4\n+x\n 5\n 6\n@@ -9,2 +8,4 @@\n 9\n 10\n+11\n+12';
+  const newFile = ['1', '2', 'x', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const runs = (rows) => local(changeRuns(rows)).map((run) => `${run.type}:${run.from}-${run.to}`);
+  assert.deepEqual(runs(mergeFileWithPatch(newFile, parsePatch(patch))), ['del:2-3', 'add:4-4', 'add:11-12']);
+  // Hunk headers are rows too
+  assert.deepEqual(runs(patchToRows(parsePatch(patch))), ['del:2-3', 'add:4-4', 'add:10-11']);
+  assert.deepEqual(runs(mergeFileWithPatch(['a', 'b'], [])), []);
 });
 
 test('splitLines drops the trailing newline only', () => {

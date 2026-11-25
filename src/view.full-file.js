@@ -21,11 +21,14 @@ const FULL_FILE_TOOLS = [
   ['reference', 'crossReference', 'Reference an issue, pull request, or discussion']
 ];
 const FULL_FILE_SHORTCUTS = {b: 'bold', i: 'italic', e: 'code', k: 'link'};
+// The least height of the thumb of the minimap, to grab it in long files
+const FULL_FILE_MIN_THUMB = 24;
 
 /**
  * Adds a "View full" button to each diff of the pull request "Files changed" page. It opens a dialog
  * showing the entire file with its changes, where comments can be added to any line. Clicking line numbers
- * selects lines (Shift+click or drag for a range) to comment on them or copy their permalink.
+ * selects lines (Shift+click or drag for a range) to comment on them or copy their permalink. A minimap next to
+ * the file shows where its changes and conversations are.
  */
 class FullFileView {
   constructor(adapter) {
@@ -151,6 +154,7 @@ class FullFileView {
 
     this._request = null;
     this._clearSelection();
+    this._stopMinimap();
     this.$modal.remove();
     this.$modal = null;
     $('html').removeClass(FULL_FILE_OPEN_CLASS);
@@ -158,6 +162,7 @@ class FullFileView {
 
   _show() {
     if (this.$modal) this.$modal.remove();
+    this._stopMinimap();
 
     this.$modal = $(
       '<div class="treehub-ff-backdrop">' +
@@ -170,7 +175,12 @@ class FullFileView {
       `<button type="button" class="treehub-ff-close" aria-label="Close">${octicon('x')}</button>` +
       '</div>' +
       '<div class="treehub-ff-notice"></div>' +
+      '<div class="treehub-ff-main">' +
       '<div class="treehub-ff-body"><div class="treehub-ff-message">Loading…</div></div>' +
+      '<div class="treehub-ff-minimap" aria-hidden="true" hidden>' +
+      '<div class="treehub-ff-minimap-marks"></div><div class="treehub-ff-minimap-thumb"></div>' +
+      '</div>' +
+      '</div>' +
       '</div></div>'
     ).appendTo(document.body);
 
@@ -326,6 +336,9 @@ class FullFileView {
       '</div>'
     ).appendTo($body);
 
+    // Before scrolling: showing the minimap narrows the file, which moves its lines
+    this._startMinimap();
+
     // Center the first change, scrolling only the dialog
     const firstChange = $body.find('.treehub-ff-add, .treehub-ff-del')[0];
     if (firstChange) {
@@ -383,6 +396,121 @@ class FullFileView {
       (thread.resolved ? '<span class="treehub-ff-badge">Resolved</span>' : '') +
       '</div></div></td></tr>'
     );
+  }
+
+  /**
+   * Shows where the changes and the conversations are in the file, next to it, once the file is rendered. The
+   * minimap is the scrollbar of the file: its thumb is the part in view, clicking or dragging it scrolls there.
+   */
+  _startMinimap() {
+    const body = this.$modal.find('.treehub-ff-body')[0];
+    const map = this.$modal.find('.treehub-ff-minimap')[0];
+    // In the order of this._rows
+    this._rowEls = [...body.querySelectorAll('.treehub-ff-row')];
+    this._runs = changeRuns(this._rows);
+
+    // Lines move when they wrap differently and when conversations, forms or previews come and go
+    this._minimapObserver = new window.ResizeObserver(() => this._scheduleMinimap());
+    this._minimapObserver.observe(body);
+    this._minimapObserver.observe(body.querySelector('.treehub-ff-table'));
+    body.addEventListener('scroll', () => this._moveMinimapThumb(), {passive: true});
+
+    // Where the pointer holds the part in view, from its center (null when it doesn't)
+    let grab = null;
+    const scrollToPointer = (event) => {
+      const {top, height} = map.getBoundingClientRect();
+      const center = (event.clientY - top - grab) / height;
+      body.scrollTop = center * body.scrollHeight - body.clientHeight / 2;
+    };
+    const release = () => {
+      grab = null;
+      map.classList.remove('treehub-ff-minimap--dragging');
+    };
+    map.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault(); // doesn't select text
+      const {top, height} = map.getBoundingClientRect();
+      const thumb = map.querySelector('.treehub-ff-minimap-thumb').getBoundingClientRect();
+      // The thumb moves with the pointer, elsewhere the file scrolls to the pointer
+      const onThumb = event.clientY >= thumb.top && event.clientY <= thumb.bottom;
+      const center = top + ((body.scrollTop + body.clientHeight / 2) / body.scrollHeight) * height;
+      grab = onThumb ? event.clientY - center : 0;
+      map.setPointerCapture(event.pointerId);
+      map.classList.add('treehub-ff-minimap--dragging');
+      scrollToPointer(event);
+    });
+    map.addEventListener('pointermove', (event) => grab != null && scrollToPointer(event));
+    map.addEventListener('pointerup', release);
+    map.addEventListener('pointercancel', release);
+    map.addEventListener('wheel', (event) => body.scrollBy(0, event.deltaY), {passive: true});
+
+    this._updateMinimap();
+  }
+
+  _stopMinimap() {
+    if (this._minimapObserver) this._minimapObserver.disconnect();
+    if (this._minimapFrame) window.cancelAnimationFrame(this._minimapFrame);
+    this._minimapObserver = this._minimapFrame = this._rowEls = null;
+  }
+
+  _scheduleMinimap() {
+    if (this._minimapFrame) return;
+    this._minimapFrame = window.requestAnimationFrame(() => {
+      this._minimapFrame = null;
+      this._updateMinimap();
+    });
+  }
+
+  /**
+   * Marks the changes and the conversations where they are in the scrolled height of the file.
+   */
+  _updateMinimap() {
+    if (!this.$modal || !this._rowEls) return;
+    const body = this.$modal.find('.treehub-ff-body')[0];
+    const map = this.$modal.find('.treehub-ff-minimap')[0];
+
+    // Only for files that don't fit
+    const shown = body.scrollHeight > body.clientHeight + 1;
+    map.hidden = !shown;
+    body.classList.toggle('treehub-ff-body--mapped', shown);
+    if (!shown) return;
+
+    const height = body.scrollHeight;
+    const origin = body.getBoundingClientRect().top - body.scrollTop;
+    const percent = (value) => `${((value / height) * 100).toFixed(3)}%`;
+    const marks = document.createDocumentFragment();
+    const mark = (kind, first, last) => {
+      const top = first.getBoundingClientRect().top - origin;
+      const el = document.createElement('i');
+      el.className = `treehub-ff-minimap-${kind}`;
+      el.style.top = percent(top);
+      el.style.height = percent(last.getBoundingClientRect().bottom - origin - top);
+      marks.appendChild(el);
+    };
+    this._runs.forEach((run) => mark(run.type, this._rowEls[run.from], this._rowEls[run.to]));
+    body.querySelectorAll('.treehub-ff-thread-row').forEach((row) => mark('thread', row, row));
+    map.querySelector('.treehub-ff-minimap-marks').replaceChildren(marks);
+
+    this._moveMinimapThumb();
+  }
+
+  /**
+   * Puts the thumb of the minimap over the part of the file in view.
+   */
+  _moveMinimapThumb() {
+    if (!this.$modal) return;
+    const body = this.$modal.find('.treehub-ff-body')[0];
+    const map = this.$modal.find('.treehub-ff-minimap')[0];
+    if (map.hidden) return;
+
+    const track = map.clientHeight;
+    const size = Math.min(track, Math.max(FULL_FILE_MIN_THUMB, (body.clientHeight / body.scrollHeight) * track));
+    // Around the center of the part in view, since the thumb can be higher than it
+    const center = ((body.scrollTop + body.clientHeight / 2) / body.scrollHeight) * track;
+    const top = Math.min(Math.max(center - size / 2, 0), track - size);
+    const thumb = map.querySelector('.treehub-ff-minimap-thumb');
+    thumb.style.height = `${size}px`;
+    thumb.style.transform = `translateY(${top}px)`;
   }
 
   /**

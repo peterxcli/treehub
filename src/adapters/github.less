@@ -1302,10 +1302,82 @@ html.treehub-ff-opened {
   }
 }
 
+.treehub-ff-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .treehub-ff-body {
   position: relative; // positions the actions on selected lines
   flex: 1;
+  min-width: 0;
   overflow: auto;
+
+  // The minimap is its scrollbar
+  &.treehub-ff-body--mapped {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+// Where the changes and the conversations are in the file, and the part of it in view (view.full-file.js)
+.treehub-ff-minimap {
+  position: relative;
+  flex: none;
+  width: 18px;
+  overflow: hidden;
+  border-left: 1px solid @border-muted;
+  background-color: @bg-muted;
+  touch-action: none;
+  user-select: none;
+
+  &[hidden] {
+    display: none;
+  }
+
+  .treehub-ff-minimap-marks i {
+    position: absolute;
+    right: 2px;
+    left: 7px;
+    min-height: 3px;
+  }
+
+  .treehub-ff-minimap-add {
+    background-color: var(--bgColor-success-emphasis, #1f883d);
+  }
+
+  .treehub-ff-minimap-del {
+    background-color: var(--bgColor-danger-emphasis, #cf222e);
+  }
+
+  // Conversations have their own lane
+  .treehub-ff-minimap-marks .treehub-ff-minimap-thread {
+    right: auto;
+    left: 2px;
+    width: 3px;
+    background-color: var(--bgColor-accent-emphasis, #0969da);
+  }
+
+  .treehub-ff-minimap-thumb {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    background-color: color-mix(in srgb, @fg 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, @fg 22%, transparent);
+  }
+
+  &:hover .treehub-ff-minimap-thumb {
+    background-color: color-mix(in srgb, @fg 18%, transparent);
+  }
+
+  &.treehub-ff-minimap--dragging .treehub-ff-minimap-thumb {
+    background-color: color-mix(in srgb, @fg 26%, transparent);
+  }
 }
 
 .treehub-ff-hint {
